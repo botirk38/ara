@@ -1,4 +1,5 @@
 import type { DashboardStats } from "@/lib/types";
+import { formatAmount } from "@/lib/format";
 import {
   Banknote,
   FileText,
@@ -12,7 +13,7 @@ export function StatsHeader({ stats }: { stats: DashboardStats }) {
       <StatCard
         icon={<Banknote className="h-5 w-5 text-red-600" />}
         label="Total Overdue"
-        value={`£${stats.totalOverdue.toLocaleString()}`}
+        value={`£${formatAmount(stats.totalOverdue)}`}
         accent="red"
       />
       <StatCard
@@ -24,7 +25,7 @@ export function StatsHeader({ stats }: { stats: DashboardStats }) {
       <StatCard
         icon={<TrendingUp className="h-5 w-5 text-green-600" />}
         label="Recovered Today"
-        value={`£${stats.recoveredToday.toLocaleString()}`}
+        value={`£${formatAmount(stats.recoveredToday)}`}
         accent="green"
       />
       <StatCard
