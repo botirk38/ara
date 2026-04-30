@@ -14,6 +14,8 @@ import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { SYSTEM_PROMPT } from "@/lib/agent/system-prompt";
 import { logEvent } from "@/lib/timeline";
+import twilio from "twilio";
+import { Resend } from "resend";
 
 export async function POST(
   _req: Request,
@@ -230,8 +232,7 @@ ${
           send({ type: "timeline", event: evt6 });
 
           try {
-            const twilioModule = await import("twilio");
-            const client = twilioModule.default(
+            const client = twilio(
               process.env.TWILIO_ACCOUNT_SID,
               process.env.TWILIO_AUTH_TOKEN
             );
@@ -266,10 +267,7 @@ ${
           }
         } else {
           try {
-            const resendModule = await import("resend");
-            const resend = new resendModule.Resend(
-              process.env.RESEND_API_KEY
-            );
+            const resend = new Resend(process.env.RESEND_API_KEY);
 
             const lines = actionContent.split("\n");
             const subject = lines[0].replace("Subject: ", "");
@@ -327,10 +325,7 @@ ${
         // 9. Send confirmation email with payment link
         if (channel === "phone" && channelDelivered) {
           try {
-            const resendModule2 = await import("resend");
-            const resend = new resendModule2.Resend(
-              process.env.RESEND_API_KEY
-            );
+            const resend = new Resend(process.env.RESEND_API_KEY);
 
             const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME;
 
