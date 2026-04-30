@@ -9,6 +9,7 @@ import type {
   InvoiceWithCustomer,
 } from "@/lib/types";
 import { getRiskLevel } from "@/lib/types";
+import { formatAmount } from "@/lib/format";
 import { Timeline } from "@/components/timeline";
 import { SponsorCards } from "@/components/sponsor-cards";
 import { RightPanel } from "@/components/right-panel";
@@ -149,7 +150,7 @@ export function InvoiceDetailClient({
               </div>
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-3xl font-bold">
-                  £{invoice.amount.toLocaleString()}
+                  £{formatAmount(invoice.amount)}
                 </span>
                 <span className="text-gray-400">|</span>
                 <span className="text-red-600 font-medium">

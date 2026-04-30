@@ -29,13 +29,15 @@ const eventTypeIcons: Record<string, React.ReactNode> = {
   risk: <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />,
 };
 
+const timeFormatter = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
 function formatTime(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  return timeFormatter.format(d);
 }
 
 export function Timeline({
