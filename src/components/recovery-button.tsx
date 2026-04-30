@@ -81,6 +81,8 @@ export function RecoveryButton({
               onAction(data.action);
             } else if (data.type === "done") {
               setPhase(data.status === "blocked" ? "blocked" : "complete");
+            } else if (data.type === "error") {
+              setPhase("idle");
             }
           } catch {
             // skip malformed SSE

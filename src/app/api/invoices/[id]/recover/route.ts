@@ -430,6 +430,10 @@ ${
         const message =
           err instanceof Error ? err.message : "Unknown error occurred";
         await logEvent(id, "System", `Recovery error: ${message}`, "blocked");
+        await db
+          .update(invoices)
+          .set({ status: "overdue", updatedAt: new Date().toISOString() })
+          .where(eq(invoices.id, id));
         send({ type: "error", message });
       } finally {
         closeStream();
