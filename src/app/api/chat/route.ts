@@ -369,12 +369,6 @@ export async function POST(req: Request) {
           );
 
           const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME;
-          if (!companyName) {
-            return {
-              paymentLink: paymentLinkUrl,
-              message: "Payment link generated but NEXT_PUBLIC_COMPANY_NAME is not configured for confirmation email",
-            };
-          }
 
           const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -383,7 +377,7 @@ export async function POST(req: Request) {
               from: process.env.RESEND_FROM_EMAIL!,
               to: customerEmail,
               subject: `Payment link for invoice ${invoiceNumber}`,
-              text: `Hi ${customerName},\n\nHere is your payment link for invoice ${invoiceNumber} (£${amount.toLocaleString()}):\n\n${paymentLinkUrl}\n\nThanks,\nARRA on behalf of ${companyName}`,
+              text: `Hi ${customerName},\n\nHere is your payment link for invoice ${invoiceNumber} (£${amount.toLocaleString()}):\n\n${paymentLinkUrl}\n\nThanks,\nARRA${companyName ? ` on behalf of ${companyName}` : ""}`,
             });
 
             await logEvent(
