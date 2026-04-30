@@ -15,7 +15,10 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.54",
+    "@ai-sdk/react": "^3.0.173",
     "@neondatabase/serverless": "^1.1.0",
+    "@slack/web-api": "^7.15.1",
+    "@slack/webhook": "^7.0.9",
     "ai": "^6.0.170",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.14.0",
