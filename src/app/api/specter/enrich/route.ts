@@ -1,18 +1,35 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { enrichDebtor } from "@/lib/specter";
 
-export async function POST(req: NextRequest) {
-  const { customerId } = await req.json();
+const enrichRequestSchema = z.object({
+  customerId: z.string().min(1),
+});
 
-  if (!customerId) {
+export async function POST(req: NextRequest) {
+  let json: unknown;
+  try {
+    json = await req.json();
+  } catch {
     return Response.json(
-      { error: "customerId is required" },
+      { error: "Invalid JSON body" },
+      { status: 400 }
+    );
+  }
+
+  const parsed = enrichRequestSchema.safeParse(json);
+  if (!parsed.success) {
+    return Response.json(
+      {
+        error: "Invalid request body",
+        details: parsed.error.flatten().fieldErrors,
+      },
       { status: 400 }
     );
   }
 
   try {
-    const result = await enrichDebtor(customerId);
+    const result = await enrichDebtor(parsed.data.customerId);
     return Response.json(result);
   } catch (err) {
     return Response.json(
