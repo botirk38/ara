@@ -223,6 +223,21 @@ ${
         // 7. Execute action via Twilio/Resend
         let channelDelivered = true;
         if (channel === "phone") {
+          if (
+            !process.env.TWILIO_ACCOUNT_SID ||
+            !process.env.TWILIO_AUTH_TOKEN ||
+            !process.env.TWILIO_PHONE_NUMBER ||
+            !process.env.NEXT_PUBLIC_BASE_URL
+          ) {
+            channelDelivered = false;
+            const evt6 = await logEvent(
+              id,
+              "ARRA",
+              "Call skipped: Twilio credentials or NEXT_PUBLIC_BASE_URL not configured",
+              "info"
+            );
+            send({ type: "timeline", event: evt6 });
+          } else {
           const evt6 = await logEvent(
             id,
             "ARRA",
@@ -239,7 +254,7 @@ ${
 
             await client.calls.create({
               to: customer.phone,
-              from: process.env.TWILIO_PHONE_NUMBER!,
+              from: process.env.TWILIO_PHONE_NUMBER,
               url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/twilio/voice?invoiceId=${id}&actionId=${actionId}`,
             });
 
@@ -264,6 +279,7 @@ ${
               "info"
             );
             send({ type: "timeline", event: evt7 });
+          }
           }
         } else {
           try {
