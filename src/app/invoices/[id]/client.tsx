@@ -13,7 +13,8 @@ import { Timeline } from "@/components/timeline";
 import { SponsorCards } from "@/components/sponsor-cards";
 import { RightPanel } from "@/components/right-panel";
 import { RecoveryButton } from "@/components/recovery-button";
-import { ArrowLeft } from "lucide-react";
+import { RecoveryChat } from "@/components/recovery-chat";
+import { ArrowLeft, MessageSquare, List } from "lucide-react";
 
 interface Props {
   invoice: InvoiceWithCustomer;
@@ -96,6 +97,8 @@ export function InvoiceDetailClient({
     []
   );
 
+  const [mode, setMode] = useState<"auto" | "chat">("auto");
+
   const risk = getRiskLevel(invoice.daysOverdue, invoice.amount);
   const riskColors = {
     low: "text-green-700 bg-green-50",
@@ -160,47 +163,98 @@ export function InvoiceDetailClient({
                 </span>
               </div>
             </div>
-            <RecoveryButton
-              invoiceId={invoice.id}
-              initialStatus={invoice.status}
-              onTimelineEvent={onTimelineEvent}
-              onStateChange={onStateChange}
-              onGateResult={onGateResult}
-              onAction={onAction}
-            />
-          </div>
-        </div>
-
-        {/* Sponsor Cards */}
-        <SponsorCards state={state} />
-
-        {/* Timeline + Right Panel */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-                  Recovery Timeline
-                </h3>
+            <div className="flex items-center gap-3">
+              {/* Mode toggle */}
+              <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                <button
+                  onClick={() => setMode("auto")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                    mode === "auto"
+                      ? "bg-black text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <List className="h-3.5 w-3.5" />
+                  Auto
+                </button>
+                <button
+                  onClick={() => setMode("chat")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                    mode === "chat"
+                      ? "bg-black text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  Chat
+                </button>
               </div>
-              <Timeline events={events} streaming={streaming} />
-              {events.length === 0 && (
-                <div className="p-8 text-center text-gray-400 text-sm">
-                  Click &quot;Start Recovery&quot; to begin the autonomous
-                  recovery process
-                </div>
+              {mode === "auto" && (
+                <RecoveryButton
+                  invoiceId={invoice.id}
+                  initialStatus={invoice.status}
+                  onTimelineEvent={onTimelineEvent}
+                  onStateChange={onStateChange}
+                  onGateResult={onGateResult}
+                  onAction={onAction}
+                />
               )}
             </div>
           </div>
-          <div className="lg:col-span-2">
-            <RightPanel
-              invoice={invoice}
-              gateResult={gateResult}
-              actionContent={actionContent}
-              actionChannel={actionChannel}
-            />
-          </div>
         </div>
+
+        {mode === "auto" ? (
+          <>
+            {/* Sponsor Cards */}
+            <SponsorCards state={state} />
+
+            {/* Timeline + Right Panel */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+              <div className="lg:col-span-3">
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                      Recovery Timeline
+                    </h3>
+                  </div>
+                  <Timeline events={events} streaming={streaming} />
+                  {events.length === 0 && (
+                    <div className="p-8 text-center text-gray-400 text-sm">
+                      Click &quot;Start Recovery&quot; to begin the autonomous
+                      recovery process
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="lg:col-span-2">
+                <RightPanel
+                  invoice={invoice}
+                  gateResult={gateResult}
+                  actionContent={actionContent}
+                  actionChannel={actionChannel}
+                />
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="lg:col-span-3">
+              <RecoveryChat
+                invoiceId={invoice.id}
+                invoiceNumber={invoice.invoiceNumber}
+                customerName={invoice.customer.name}
+              />
+            </div>
+            <div className="lg:col-span-2">
+              <RightPanel
+                invoice={invoice}
+                gateResult={gateResult}
+                actionContent={actionContent}
+                actionChannel={actionChannel}
+              />
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

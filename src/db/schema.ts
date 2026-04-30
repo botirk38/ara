@@ -86,3 +86,14 @@ export const paymentLinks = pgTable("payment_links", {
   status: text("status").notNull(), // generated | sent | clicked | paid
   createdAt: text("created_at").notNull(),
 });
+
+export const pendingApprovals = pgTable("pending_approvals", {
+  id: text("id").primaryKey(),
+  invoiceId: text("invoice_id").notNull(),
+  reason: text("reason").notNull(),
+  context: text("context"),
+  decision: text("decision"), // approved | denied | null (pending)
+  decidedBy: text("decided_by"),
+  decidedAt: text("decided_at"),
+  createdAt: text("created_at").notNull(),
+});
