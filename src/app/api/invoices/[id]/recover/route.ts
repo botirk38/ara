@@ -248,6 +248,12 @@ ${
         });
 
         // 7. Execute action via Twilio/Resend
+        if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+          throw new Error(
+            "RESEND_API_KEY and RESEND_FROM_EMAIL are required for email delivery."
+          );
+        }
+
         let channelDelivered = true;
         if (channel === "phone") {
           if (
@@ -310,12 +316,6 @@ ${
             send({ type: "timeline", event: evt7 });
           }
         } else {
-          if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
-            throw new Error(
-              "RESEND_API_KEY and RESEND_FROM_EMAIL are required for email delivery."
-            );
-          }
-
           let emailSent = false;
           try {
             const resendModule = await import("resend");
@@ -387,7 +387,7 @@ ${
             const resend = new resendModule2.Resend(process.env.RESEND_API_KEY);
 
             await resend.emails.send({
-              from: process.env.RESEND_FROM_EMAIL!,
+              from: process.env.RESEND_FROM_EMAIL,
               to: customer.email,
               subject: `Confirmation for invoice ${invoice.invoiceNumber}`,
               text: `Hi ${customer.name},\n\nThanks for speaking with us today. As discussed, invoice ${invoice.invoiceNumber} for £${invoice.amount.toLocaleString()} is expected to be paid.\n\nYou can use this payment link:\n${paymentLinkUrl}\n\nThanks,\nARRA on behalf of Acme Ltd`,
