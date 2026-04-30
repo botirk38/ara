@@ -237,5 +237,5 @@ if (
   process.argv[1] &&
   new URL(import.meta.url).pathname === new URL(`file://${process.argv[1]}`).pathname
 ) {
-  seed().catch(console.error);
+  seed().catch((err) => { console.error(err); process.exit(1); });
 }
