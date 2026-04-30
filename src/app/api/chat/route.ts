@@ -7,7 +7,6 @@ import {
   customers,
   recoveryActions,
   autonomyDecisions,
-  timelineEvents,
   paymentLinks,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -19,30 +18,13 @@ import {
   createApprovalAndNotify,
   checkApprovalDecision,
 } from "@/lib/slack";
+import { logEvent } from "@/lib/timeline";
 
 export const maxDuration = 120;
 
 const chatRequestSchema = z.object({
   messages: z.array(z.record(z.string(), z.unknown())),
 });
-
-async function logEvent(
-  invoiceId: string,
-  actor: string,
-  message: string,
-  eventType: string
-) {
-  const event = {
-    id: uuid(),
-    invoiceId,
-    actor,
-    message,
-    eventType,
-    createdAt: new Date().toISOString(),
-  };
-  await db.insert(timelineEvents).values(event);
-  return event;
-}
 
 export async function POST(req: Request) {
   let json: unknown;

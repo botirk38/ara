@@ -55,8 +55,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "Missing payload" }, { status: 400 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let payload: any;
+  let payload: { type?: string; actions?: { action_id: string; value: string }[]; user?: { name?: string; username?: string }; response_url?: string };
   try {
     payload = JSON.parse(payloadStr);
   } catch {
@@ -84,6 +83,7 @@ export async function POST(req: Request) {
       continue;
     }
     const { approvalId } = actionValue;
+    if (!approvalId) continue;
     const decision =
       action.action_id === "arra_approve" ? "approved" : "denied";
     const user = payload.user ?? {};
