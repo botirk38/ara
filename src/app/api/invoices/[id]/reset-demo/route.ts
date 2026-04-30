@@ -44,9 +44,7 @@ export async function POST(
       .delete(pendingApprovals)
       .where(eq(pendingApprovals.invoiceId, id));
   } catch (err: unknown) {
-    const isUndefinedTable =
-      err instanceof Error && "code" in err && (err as { code: string }).code === "42P01";
-    if (!isUndefinedTable) {
+    if (!isUndefinedTableError(err)) {
       console.error("[reset-demo] Failed to delete pending approvals:", err);
     }
   }
@@ -66,4 +64,21 @@ export async function POST(
   });
 
   return Response.json({ success: true, invoiceId: id });
+}
+
+function isPostgresError(err: unknown, code: string): boolean {
+  if (!(err instanceof Error)) return false;
+  if ("code" in err && (err as Record<string, unknown>).code === code)
+    return true;
+  if (
+    err.cause instanceof Error &&
+    "code" in err.cause &&
+    (err.cause as Record<string, unknown>).code === code
+  )
+    return true;
+  return false;
+}
+
+function isUndefinedTableError(err: unknown): boolean {
+  return isPostgresError(err, "42P01");
 }
