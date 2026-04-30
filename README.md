@@ -79,6 +79,9 @@ TWILIO_PHONE_NUMBER=
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=
 
+# Debtor risk intelligence (Specter enrichment)
+SPECTER_API_KEY=
+
 # Deployment URL (required for webhooks and payment links)
 NEXT_PUBLIC_BASE_URL=
 ```
