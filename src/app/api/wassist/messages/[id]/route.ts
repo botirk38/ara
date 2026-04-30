@@ -4,6 +4,8 @@ export const dynamic = "force-dynamic";
 
 const WASSIST_API_URL = "https://backend.wassist.app";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function GET(
   _request: Request,
   { params }: { params: { id: string } }
@@ -17,6 +19,13 @@ export async function GET(
   }
 
   const { id } = params;
+
+  if (!UUID_REGEX.test(id)) {
+    return NextResponse.json(
+      { error: "Invalid conversation ID format" },
+      { status: 400 }
+    );
+  }
 
   try {
     const res = await fetch(
