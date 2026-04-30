@@ -16,11 +16,11 @@ bun run dev         # Start development server at http://localhost:3000
 
 Single Next.js 14 App Router application with:
 
-- **Drizzle ORM + SQLite** — 7 tables (customers, invoices, recovery_actions, autonomy_decisions, timeline_events, specter_enrichments, payment_links)
-- **Vercel AI SDK** — LLM-powered recovery action drafting (phone scripts, emails)
+- **Drizzle ORM + Neon PostgreSQL** — 7 tables (customers, invoices, recovery_actions, autonomy_decisions, timeline_events, specter_enrichments, payment_links)
+- **Vercel AI SDK + OpenAI** — LLM-powered recovery action drafting (phone scripts, emails)
 - **SSE Streaming** — Real-time timeline updates during recovery
-- **Twilio** — Outbound voice calls (optional, mocked when no API key)
-- **Resend** — Email delivery (optional, mocked when no API key)
+- **Twilio** — Outbound voice calls
+- **Resend** — Email delivery
 - **Specter** — Debtor risk intelligence enrichment
 
 ## Recovery Flow
@@ -60,19 +60,30 @@ Deterministic (not LLM-driven) safety checks:
 | Camden Studio | INV-1026 | £950 | 5 | Low | Email → Friendly reminder |
 | Albion Foods | INV-1027 | £5,050 | 48 | Medium | Phone → Payment plan |
 
-## Environment Variables (Optional)
+## Environment Variables (Required)
 
 ```env
-OPENAI_API_KEY=           # For LLM-powered action drafting (falls back to templates)
-TWILIO_ACCOUNT_SID=       # For real phone calls
+# Database (Neon PostgreSQL via Vercel integration)
+DATABASE_URL=             # Pooled connection URL
+DATABASE_URL_UNPOOLED=    # Direct connection URL
+
+# LLM (required for recovery action drafting)
+OPENAI_API_KEY=
+
+# Voice calls (required for phone channel)
+TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_PHONE_NUMBER=
-RESEND_API_KEY=           # For real email delivery
+
+# Email delivery (required for email channel)
+RESEND_API_KEY=
 RESEND_FROM_EMAIL=
-NEXT_PUBLIC_BASE_URL=     # For Twilio webhook URLs
+
+# Deployment URL (required for webhooks and payment links)
+NEXT_PUBLIC_BASE_URL=
 ```
 
-All integrations gracefully degrade — the app works fully in demo mode without any API keys.
+All environment variables are required. The app will throw clear errors if any are missing.
 
 ## Scripts
 
