@@ -164,10 +164,17 @@ export function WhatsAppChat() {
           </div>
         )}
 
-        {!loadingMessages && messages.length === 0 && (
+        {!loadingMessages && messages.length === 0 && !error && (
           <div className="flex flex-col items-center justify-center h-full text-gray-400 text-sm gap-2">
             <MessageCircle className="h-8 w-8" />
             <p>No messages yet</p>
+          </div>
+        )}
+
+        {!loadingMessages && error && messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-red-400 text-sm gap-2">
+            <MessageCircle className="h-8 w-8" />
+            <p>{error}</p>
           </div>
         )}
 
