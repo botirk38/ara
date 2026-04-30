@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="alice" language="en-GB">${escapeXml(script)}</Say>
-  <Gather input="speech" timeout="5" action="/api/twilio/gather?actionId=${actionId}&amp;invoiceId=${invoiceId}" method="POST">
+  <Gather input="speech" timeout="5" action="/api/twilio/gather?actionId=${escapeXml(actionId || '')}&amp;invoiceId=${escapeXml(invoiceId || '')}" method="POST">
     <Say voice="alice" language="en-GB">Please let us know when you expect to make this payment.</Say>
   </Gather>
   <Say voice="alice" language="en-GB">Thank you for your time. We will follow up by email.</Say>

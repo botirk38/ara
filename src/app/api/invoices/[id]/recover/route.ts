@@ -270,7 +270,7 @@ ${
               );
 
               const baseUrl =
-                process.env.NEXT_PUBLIC_BASE_URL || "https://localhost:3000";
+                process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
               await client.calls.create({
                 to: customer.phone,
                 from: process.env.TWILIO_PHONE_NUMBER!,
