@@ -26,7 +26,6 @@ const uiMessageSchema = z.object({
   id: z.string(),
   role: z.enum(["system", "user", "assistant", "data"]),
   content: z.string(),
-  parts: z.array(z.record(z.string(), z.unknown())).optional(),
 }).passthrough();
 
 const chatRequestSchema = z.object({
@@ -55,7 +54,11 @@ export async function POST(req: Request) {
     );
   }
 
-  const messages = parsed.data.messages as UIMessage[];
+  // Zod validates core fields (id, role, content); passthrough preserves
+  // additional UIMessage properties like parts. The cast through unknown
+  // is needed because passthrough's index signature doesn't structurally
+  // match UIMessage's optional complex fields.
+  const messages = parsed.data.messages as unknown as UIMessage[];
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
