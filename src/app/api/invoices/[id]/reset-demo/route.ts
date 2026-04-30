@@ -43,8 +43,12 @@ export async function POST(
     await db
       .delete(pendingApprovals)
       .where(eq(pendingApprovals.invoiceId, id));
-  } catch {
-    // Table may not exist yet if migrations haven't been run
+  } catch (err: unknown) {
+    const isUndefinedTable =
+      err instanceof Error && "code" in err && (err as { code: string }).code === "42P01";
+    if (!isUndefinedTable) {
+      console.error("[reset-demo] Failed to delete pending approvals:", err);
+    }
   }
 
   await db
