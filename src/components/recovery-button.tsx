@@ -5,7 +5,7 @@ import type {
   TimelineEvent,
   AutonomyGateResult,
 } from "@/lib/types";
-import { Loader2, Play, RotateCcw, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Play, CheckCircle2, XCircle } from "lucide-react";
 
 type Phase = "idle" | "running" | "complete" | "blocked";
 
@@ -35,7 +35,6 @@ export function RecoveryButton({
       ? "running"
       : "idle"
   );
-  const [resetting, setResetting] = useState(false);
 
   const startRecovery = useCallback(async () => {
     setPhase("running");
@@ -93,48 +92,28 @@ export function RecoveryButton({
     }
   }, [invoiceId, onTimelineEvent, onStateChange, onGateResult, onAction]);
 
-  const resetDemo = useCallback(async () => {
-    setResetting(true);
-    try {
-      await fetch(`/api/invoices/${invoiceId}/reset-demo`, { method: "POST" });
-      window.location.reload();
-    } finally {
-      setResetting(false);
-    }
-  }, [invoiceId]);
-
   if (phase === "complete" || phase === "blocked") {
     return (
-      <div className="flex gap-2">
-        <button
-          className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg ${
-            phase === "complete"
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
-          disabled
-        >
-          {phase === "complete" ? (
-            <>
-              <CheckCircle2 className="h-4 w-4" />
-              Recovery Complete
-            </>
-          ) : (
-            <>
-              <XCircle className="h-4 w-4" />
-              Human Review Required
-            </>
-          )}
-        </button>
-        <button
-          onClick={resetDemo}
-          disabled={resetting}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          <RotateCcw className={`h-4 w-4 ${resetting ? "animate-spin" : ""}`} />
-          Reset Demo
-        </button>
-      </div>
+      <button
+        className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg ${
+          phase === "complete"
+            ? "bg-green-100 text-green-800"
+            : "bg-red-100 text-red-800"
+        }`}
+        disabled
+      >
+        {phase === "complete" ? (
+          <>
+            <CheckCircle2 className="h-4 w-4" />
+            Recovery Complete
+          </>
+        ) : (
+          <>
+            <XCircle className="h-4 w-4" />
+            Human Review Required
+          </>
+        )}
+      </button>
     );
   }
 

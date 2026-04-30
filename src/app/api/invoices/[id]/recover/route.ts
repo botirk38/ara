@@ -196,13 +196,16 @@ export async function POST(
             : "escalated_recovery";
 
         // 6. Draft recovery action using LLM
-        let actionContent: string;
+        if (!process.env.OPENAI_API_KEY) {
+          throw new Error(
+            "OPENAI_API_KEY is required for LLM-powered recovery drafting."
+          );
+        }
 
-        if (process.env.OPENAI_API_KEY) {
-          const { text } = await generateText({
-            model: openai("gpt-4o-mini"),
-            system: SYSTEM_PROMPT,
-            prompt: `Draft a ${channel} recovery action for this invoice.
+        const { text: actionContent } = await generateText({
+          model: openai("gpt-4o-mini"),
+          system: SYSTEM_PROMPT,
+          prompt: `Draft a ${channel} recovery action for this invoice.
 
 Invoice: ${invoice.invoiceNumber}
 Amount: £${invoice.amount.toLocaleString()}
@@ -219,14 +222,7 @@ ${
     ? "Write a professional phone call script. Be concise, mention the invoice number and amount, and ask about payment scheduling."
     : "Write a professional email. Include a subject line on the first line, then the body. Mention the invoice number, amount, and due date."
 }`,
-          });
-          actionContent = text;
-        } else {
-          actionContent =
-            channel === "phone"
-              ? `Hi, this is ARRA calling on behalf of Acme Ltd.\n\nI'm following up on invoice ${invoice.invoiceNumber} for £${invoice.amount.toLocaleString()}, which was due on ${invoice.dueDate}.\n\nI wanted to check whether this has been scheduled for payment, or if anything is blocking it on your side.`
-              : `Subject: Payment reminder for invoice ${invoice.invoiceNumber}\n\nHi ${customer.name},\n\nThis is a friendly reminder that invoice ${invoice.invoiceNumber} for £${invoice.amount.toLocaleString()} was due on ${invoice.dueDate} and is now ${invoice.daysOverdue} days overdue.\n\nCould you please let us know when we can expect payment?\n\nKind regards,\nARRA on behalf of Acme Ltd`;
-        }
+        });
 
         const actionId = uuid();
         await db.insert(recoveryActions).values({
@@ -251,65 +247,45 @@ ${
           action: { id: actionId, channel, strategy, content: actionContent },
         });
 
-        // 7. Execute action (mock for demo — real Twilio/Resend if keys present)
+        // 7. Execute action via Twilio/Resend
         let channelDelivered = true;
         if (channel === "phone") {
-          if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-            const evt6 = await logEvent(
-              id,
-              "ARRA",
-              "Placing outbound call via Twilio...",
-              "call"
+          if (
+            !process.env.TWILIO_ACCOUNT_SID ||
+            !process.env.TWILIO_AUTH_TOKEN ||
+            !process.env.TWILIO_PHONE_NUMBER
+          ) {
+            throw new Error(
+              "TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER are required for outbound calls."
             );
-            send({ type: "timeline", event: evt6 });
+          }
 
-            try {
-              const twilioModule = await import("twilio");
-              const client = twilioModule.default(
-                process.env.TWILIO_ACCOUNT_SID!,
-                process.env.TWILIO_AUTH_TOKEN!
+          const evt6 = await logEvent(
+            id,
+            "ARRA",
+            "Placing outbound call via Twilio...",
+            "call"
+          );
+          send({ type: "timeline", event: evt6 });
+
+          try {
+            const twilioModule = await import("twilio");
+            const client = twilioModule.default(
+              process.env.TWILIO_ACCOUNT_SID,
+              process.env.TWILIO_AUTH_TOKEN
+            );
+
+            if (!process.env.NEXT_PUBLIC_BASE_URL) {
+              throw new Error(
+                "NEXT_PUBLIC_BASE_URL is required for Twilio webhook callbacks."
               );
-
-              const baseUrl =
-                process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-              await client.calls.create({
-                to: customer.phone,
-                from: process.env.TWILIO_PHONE_NUMBER!,
-                url: `${baseUrl}/api/twilio/voice?invoiceId=${id}&actionId=${actionId}`,
-              });
-
-              await db
-                .update(recoveryActions)
-                .set({ status: "called" })
-                .where(eq(recoveryActions.id, actionId));
-
-              const evt7 = await logEvent(
-                id,
-                "ARRA",
-                "Twilio outbound call placed successfully",
-                "call"
-              );
-              send({ type: "timeline", event: evt7 });
-            } catch (err) {
-              channelDelivered = false;
-              const evt7 = await logEvent(
-                id,
-                "ARRA",
-                `Call failed: ${err instanceof Error ? err.message : "Unknown error"} — requires manual follow-up`,
-                "info"
-              );
-              send({ type: "timeline", event: evt7 });
             }
-          } else {
-            const evt6 = await logEvent(
-              id,
-              "ARRA",
-              "Placed outbound call to debtor",
-              "call"
-            );
-            send({ type: "timeline", event: evt6 });
 
-            await new Promise((r) => setTimeout(r, 1500));
+            await client.calls.create({
+              to: customer.phone,
+              from: process.env.TWILIO_PHONE_NUMBER,
+              url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/twilio/voice?invoiceId=${id}&actionId=${actionId}`,
+            });
 
             await db
               .update(recoveryActions)
@@ -318,63 +294,44 @@ ${
 
             const evt7 = await logEvent(
               id,
-              "Debtor",
-              '"We can pay Friday"',
-              "success"
+              "ARRA",
+              "Twilio outbound call placed successfully",
+              "call"
             );
             send({ type: "timeline", event: evt7 });
-
-            const evt8 = await logEvent(
+          } catch (err) {
+            channelDelivered = false;
+            const evt7 = await logEvent(
               id,
               "ARRA",
-              "Recorded promise-to-pay: Friday",
-              "success"
+              `Call failed: ${err instanceof Error ? err.message : "Unknown error"} — requires manual follow-up`,
+              "info"
             );
-            send({ type: "timeline", event: evt8 });
+            send({ type: "timeline", event: evt7 });
           }
         } else {
+          if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+            throw new Error(
+              "RESEND_API_KEY and RESEND_FROM_EMAIL are required for email delivery."
+            );
+          }
+
           let emailSent = false;
-          if (process.env.RESEND_API_KEY) {
-            try {
-              const resendModule = await import("resend");
-              const resend = new resendModule.Resend(process.env.RESEND_API_KEY);
+          try {
+            const resendModule = await import("resend");
+            const resend = new resendModule.Resend(process.env.RESEND_API_KEY);
 
-              const lines = actionContent.split("\n");
-              const subject = lines[0].replace("Subject: ", "");
-              const body = lines.slice(1).join("\n").trim();
+            const lines = actionContent.split("\n");
+            const subject = lines[0].replace("Subject: ", "");
+            const body = lines.slice(1).join("\n").trim();
 
-              await resend.emails.send({
-                from:
-                  process.env.RESEND_FROM_EMAIL ||
-                  "arra@briefcase-collect.demo",
-                to: customer.email,
-                subject,
-                text: body,
-              });
+            await resend.emails.send({
+              from: process.env.RESEND_FROM_EMAIL,
+              to: customer.email,
+              subject,
+              text: body,
+            });
 
-              emailSent = true;
-              await db
-                .update(recoveryActions)
-                .set({ status: "sent" })
-                .where(eq(recoveryActions.id, actionId));
-
-              const evt6 = await logEvent(
-                id,
-                "ARRA",
-                `Email sent to ${customer.email} via Resend`,
-                "email"
-              );
-              send({ type: "timeline", event: evt6 });
-            } catch (err) {
-              const evt6 = await logEvent(
-                id,
-                "ARRA",
-                `Email send failed: ${err instanceof Error ? err.message : "Unknown error"} — logged for retry`,
-                "info"
-              );
-              send({ type: "timeline", event: evt6 });
-            }
-          } else {
             emailSent = true;
             await db
               .update(recoveryActions)
@@ -384,8 +341,16 @@ ${
             const evt6 = await logEvent(
               id,
               "ARRA",
-              `Recovery email sent to ${customer.email}`,
+              `Email sent to ${customer.email} via Resend`,
               "email"
+            );
+            send({ type: "timeline", event: evt6 });
+          } catch (err) {
+            const evt6 = await logEvent(
+              id,
+              "ARRA",
+              `Email send failed: ${err instanceof Error ? err.message : "Unknown error"} — logged for retry`,
+              "info"
             );
             send({ type: "timeline", event: evt6 });
           }
@@ -393,7 +358,12 @@ ${
         }
 
         // 8. Create payment link
-        const paymentLinkUrl = `https://pay.briefcase-collect.demo/invoice/${invoice.invoiceNumber}`;
+        if (!process.env.NEXT_PUBLIC_BASE_URL) {
+          throw new Error(
+            "NEXT_PUBLIC_BASE_URL is required for generating payment links."
+          );
+        }
+        const paymentLinkUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/pay/${invoice.invoiceNumber}`;
         await db.insert(paymentLinks).values({
           id: uuid(),
           invoiceId: id,
@@ -411,14 +381,13 @@ ${
         send({ type: "timeline", event: evt9 });
 
         // 9. Send confirmation email with payment link
-        if (process.env.RESEND_API_KEY && channel === "phone") {
+        if (channel === "phone") {
           try {
             const resendModule2 = await import("resend");
             const resend = new resendModule2.Resend(process.env.RESEND_API_KEY);
 
             await resend.emails.send({
-              from:
-                process.env.RESEND_FROM_EMAIL || "arra@briefcase-collect.demo",
+              from: process.env.RESEND_FROM_EMAIL!,
               to: customer.email,
               subject: `Confirmation for invoice ${invoice.invoiceNumber}`,
               text: `Hi ${customer.name},\n\nThanks for speaking with us today. As discussed, invoice ${invoice.invoiceNumber} for £${invoice.amount.toLocaleString()} is expected to be paid.\n\nYou can use this payment link:\n${paymentLinkUrl}\n\nThanks,\nARRA on behalf of Acme Ltd`,
@@ -431,23 +400,15 @@ ${
               "email"
             );
             send({ type: "timeline", event: evt10 });
-          } catch {
+          } catch (err) {
             const evt10 = await logEvent(
               id,
               "ARRA",
-              "Confirmation email queued (will retry)",
+              `Confirmation email failed: ${err instanceof Error ? err.message : "Unknown error"}`,
               "info"
             );
             send({ type: "timeline", event: evt10 });
           }
-        } else {
-          const evt10 = await logEvent(
-            id,
-            "ARRA",
-            `Confirmation email sent to ${customer.email} with payment link`,
-            "email"
-          );
-          send({ type: "timeline", event: evt10 });
         }
 
         // 10. Update invoice status
