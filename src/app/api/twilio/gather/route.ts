@@ -3,12 +3,26 @@ import { timelineEvents } from "@/db/schema";
 import { v4 as uuid } from "uuid";
 import { NextRequest } from "next/server";
 
+const FORM_CONTENT_TYPES = [
+  "application/x-www-form-urlencoded",
+  "multipart/form-data",
+];
+
+function hasFormContentType(req: NextRequest): boolean {
+  const ct = req.headers.get("content-type") ?? "";
+  return FORM_CONTENT_TYPES.some((t) => ct.startsWith(t));
+}
+
 export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const invoiceId = searchParams.get("invoiceId") || "";
 
-  const formData = await req.formData();
-  const speechResult = formData.get("SpeechResult") as string;
+  let speechResult: string | null = null;
+
+  if (hasFormContentType(req)) {
+    const formData = await req.formData();
+    speechResult = formData.get("SpeechResult") as string | null;
+  }
 
   if (speechResult) {
     await db.insert(timelineEvents).values({
