@@ -15,7 +15,7 @@ import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { SYSTEM_PROMPT } from "@/lib/agent/system-prompt";
 
-function logEvent(
+async function logEvent(
   invoiceId: string,
   actor: string,
   message: string,
@@ -29,7 +29,7 @@ function logEvent(
     eventType,
     createdAt: new Date().toISOString(),
   };
-  db.insert(timelineEvents).values(event).run();
+  await db.insert(timelineEvents).values(event);
   return event;
 }
 
@@ -39,16 +39,20 @@ export async function POST(
 ) {
   const { id } = params;
 
-  const invoice = db.select().from(invoices).where(eq(invoices.id, id)).get();
+  const invoiceRows = await db
+    .select()
+    .from(invoices)
+    .where(eq(invoices.id, id));
+  const invoice = invoiceRows[0];
   if (!invoice) {
     return Response.json({ error: "Invoice not found" }, { status: 404 });
   }
 
-  const customer = db
+  const customerRows = await db
     .select()
     .from(customers)
-    .where(eq(customers.id, invoice.customerId))
-    .get();
+    .where(eq(customers.id, invoice.customerId));
+  const customer = customerRows[0];
   if (!customer) {
     return Response.json({ error: "Customer not found" }, { status: 404 });
   }
@@ -72,13 +76,13 @@ export async function POST(
 
       try {
         // 1. Update status to recovering
-        db.update(invoices)
+        await db
+          .update(invoices)
           .set({ status: "recovering", updatedAt: new Date().toISOString() })
-          .where(eq(invoices.id, id))
-          .run();
+          .where(eq(invoices.id, id));
 
         // 2. Log briefcase context loaded
-        const evt1 = logEvent(
+        const evt1 = await logEvent(
           id,
           "Briefcase",
           `Loaded invoice ${invoice.invoiceNumber} — ${customer.name} — £${invoice.amount.toLocaleString()}`,
@@ -94,7 +98,7 @@ export async function POST(
         // 3. Specter enrichment
         send({ type: "state", field: "specter", value: "loading" });
         const specterResult = await enrichDebtor(customer.id);
-        const evt2 = logEvent(
+        const evt2 = await logEvent(
           id,
           "Specter",
           `Enriched debtor: ${specterResult.riskSignal} risk — ${specterResult.summary}`,
@@ -116,23 +120,21 @@ export async function POST(
           specterResult.riskSignal
         );
 
-        db.insert(autonomyDecisions)
-          .values({
-            id: uuid(),
-            invoiceId: id,
-            allowed: gateResult.allowed,
-            reasons: JSON.stringify(gateResult.reasons),
-            amountThresholdPassed: gateResult.checks.amountThresholdPassed,
-            disputeCheckPassed: gateResult.checks.disputeCheckPassed,
-            daysOverduePassed: gateResult.checks.daysOverduePassed,
-            specterRiskPassed: gateResult.checks.specterRiskPassed,
-            relationshipPassed: gateResult.checks.relationshipPassed,
-            createdAt: new Date().toISOString(),
-          })
-          .run();
+        await db.insert(autonomyDecisions).values({
+          id: uuid(),
+          invoiceId: id,
+          allowed: gateResult.allowed,
+          reasons: JSON.stringify(gateResult.reasons),
+          amountThresholdPassed: gateResult.checks.amountThresholdPassed,
+          disputeCheckPassed: gateResult.checks.disputeCheckPassed,
+          daysOverduePassed: gateResult.checks.daysOverduePassed,
+          specterRiskPassed: gateResult.checks.specterRiskPassed,
+          relationshipPassed: gateResult.checks.relationshipPassed,
+          createdAt: new Date().toISOString(),
+        });
 
         if (!gateResult.allowed) {
-          const evt3 = logEvent(
+          const evt3 = await logEvent(
             id,
             "ARRA",
             `Autonomy Gate blocked: ${gateResult.reasons.join(", ")}`,
@@ -145,15 +147,15 @@ export async function POST(
             result: gateResult,
           });
 
-          db.update(invoices)
+          await db
+            .update(invoices)
             .set({
               status: "human_review",
               updatedAt: new Date().toISOString(),
             })
-            .where(eq(invoices.id, id))
-            .run();
+            .where(eq(invoices.id, id));
 
-          const evt4 = logEvent(
+          const evt4 = await logEvent(
             id,
             "ARRA",
             "Escalated to human review — autonomous action not permitted",
@@ -166,7 +168,7 @@ export async function POST(
           return;
         }
 
-        const evt3 = logEvent(
+        const evt3 = await logEvent(
           id,
           "ARRA",
           `Autonomy Gate passed: ${Object.entries(gateResult.checks)
@@ -227,19 +229,17 @@ ${
         }
 
         const actionId = uuid();
-        db.insert(recoveryActions)
-          .values({
-            id: actionId,
-            invoiceId: id,
-            channel,
-            actionType: channel === "phone" ? "call" : "email",
-            content: actionContent,
-            status: "drafted",
-            createdAt: new Date().toISOString(),
-          })
-          .run();
+        await db.insert(recoveryActions).values({
+          id: actionId,
+          invoiceId: id,
+          channel,
+          actionType: channel === "phone" ? "call" : "email",
+          content: actionContent,
+          status: "drafted",
+          createdAt: new Date().toISOString(),
+        });
 
-        const evt5 = logEvent(
+        const evt5 = await logEvent(
           id,
           "ARRA",
           `Selected channel: ${channel} — Strategy: ${strategy}`,
@@ -254,7 +254,7 @@ ${
         // 7. Execute action (mock for demo — real Twilio/Resend if keys present)
         if (channel === "phone") {
           if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-            const evt6 = logEvent(
+            const evt6 = await logEvent(
               id,
               "ARRA",
               "Placing outbound call via Twilio...",
@@ -277,12 +277,12 @@ ${
                 url: `${baseUrl}/api/twilio/voice?invoiceId=${id}&actionId=${actionId}`,
               });
 
-              db.update(recoveryActions)
+              await db
+                .update(recoveryActions)
                 .set({ status: "called" })
-                .where(eq(recoveryActions.id, actionId))
-                .run();
+                .where(eq(recoveryActions.id, actionId));
 
-              const evt7 = logEvent(
+              const evt7 = await logEvent(
                 id,
                 "ARRA",
                 "Twilio outbound call placed successfully",
@@ -290,7 +290,7 @@ ${
               );
               send({ type: "timeline", event: evt7 });
             } catch (err) {
-              const evt7 = logEvent(
+              const evt7 = await logEvent(
                 id,
                 "ARRA",
                 `Call failed: ${err instanceof Error ? err.message : "Unknown error"} — continuing with email fallback`,
@@ -299,7 +299,7 @@ ${
               send({ type: "timeline", event: evt7 });
             }
           } else {
-            const evt6 = logEvent(
+            const evt6 = await logEvent(
               id,
               "ARRA",
               "Placed outbound call to debtor",
@@ -309,12 +309,12 @@ ${
 
             await new Promise((r) => setTimeout(r, 1500));
 
-            db.update(recoveryActions)
+            await db
+              .update(recoveryActions)
               .set({ status: "called" })
-              .where(eq(recoveryActions.id, actionId))
-              .run();
+              .where(eq(recoveryActions.id, actionId));
 
-            const evt7 = logEvent(
+            const evt7 = await logEvent(
               id,
               "Debtor",
               '"We can pay Friday"',
@@ -322,7 +322,7 @@ ${
             );
             send({ type: "timeline", event: evt7 });
 
-            const evt8 = logEvent(
+            const evt8 = await logEvent(
               id,
               "ARRA",
               "Recorded promise-to-pay: Friday",
@@ -349,12 +349,12 @@ ${
                 text: body,
               });
 
-              db.update(recoveryActions)
+              await db
+                .update(recoveryActions)
                 .set({ status: "sent" })
-                .where(eq(recoveryActions.id, actionId))
-                .run();
+                .where(eq(recoveryActions.id, actionId));
 
-              const evt6 = logEvent(
+              const evt6 = await logEvent(
                 id,
                 "ARRA",
                 `Email sent to ${customer.email} via Resend`,
@@ -362,7 +362,7 @@ ${
               );
               send({ type: "timeline", event: evt6 });
             } catch (err) {
-              const evt6 = logEvent(
+              const evt6 = await logEvent(
                 id,
                 "ARRA",
                 `Email send failed: ${err instanceof Error ? err.message : "Unknown error"} — logged for retry`,
@@ -371,12 +371,12 @@ ${
               send({ type: "timeline", event: evt6 });
             }
           } else {
-            db.update(recoveryActions)
+            await db
+              .update(recoveryActions)
               .set({ status: "sent" })
-              .where(eq(recoveryActions.id, actionId))
-              .run();
+              .where(eq(recoveryActions.id, actionId));
 
-            const evt6 = logEvent(
+            const evt6 = await logEvent(
               id,
               "ARRA",
               `Recovery email sent to ${customer.email}`,
@@ -388,17 +388,15 @@ ${
 
         // 8. Create payment link
         const paymentLinkUrl = `https://pay.briefcase-collect.demo/invoice/${invoice.invoiceNumber}`;
-        db.insert(paymentLinks)
-          .values({
-            id: uuid(),
-            invoiceId: id,
-            url: paymentLinkUrl,
-            status: "generated",
-            createdAt: new Date().toISOString(),
-          })
-          .run();
+        await db.insert(paymentLinks).values({
+          id: uuid(),
+          invoiceId: id,
+          url: paymentLinkUrl,
+          status: "generated",
+          createdAt: new Date().toISOString(),
+        });
 
-        const evt9 = logEvent(
+        const evt9 = await logEvent(
           id,
           "ARRA",
           `Payment link generated: ${paymentLinkUrl}`,
@@ -420,7 +418,7 @@ ${
               text: `Hi ${customer.name},\n\nThanks for speaking with us today. As discussed, invoice ${invoice.invoiceNumber} for £${invoice.amount.toLocaleString()} is expected to be paid.\n\nYou can use this payment link:\n${paymentLinkUrl}\n\nThanks,\nARRA on behalf of Acme Ltd`,
             });
 
-            const evt10 = logEvent(
+            const evt10 = await logEvent(
               id,
               "ARRA",
               `Confirmation email sent to ${customer.email} with payment link`,
@@ -428,7 +426,7 @@ ${
             );
             send({ type: "timeline", event: evt10 });
           } catch {
-            const evt10 = logEvent(
+            const evt10 = await logEvent(
               id,
               "ARRA",
               "Confirmation email queued (will retry)",
@@ -437,7 +435,7 @@ ${
             send({ type: "timeline", event: evt10 });
           }
         } else {
-          const evt10 = logEvent(
+          const evt10 = await logEvent(
             id,
             "ARRA",
             `Confirmation email sent to ${customer.email} with payment link`,
@@ -449,12 +447,12 @@ ${
         // 10. Update invoice status
         const newStatus =
           channel === "phone" ? "promise_to_pay" : "recovering";
-        db.update(invoices)
+        await db
+          .update(invoices)
           .set({ status: newStatus, updatedAt: new Date().toISOString() })
-          .where(eq(invoices.id, id))
-          .run();
+          .where(eq(invoices.id, id));
 
-        const evt11 = logEvent(
+        const evt11 = await logEvent(
           id,
           "Briefcase",
           `Invoice status updated: ${newStatus.replace(/_/g, " ")}`,
@@ -466,7 +464,7 @@ ${
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Unknown error occurred";
-        logEvent(id, "System", `Recovery error: ${message}`, "blocked");
+        await logEvent(id, "System", `Recovery error: ${message}`, "blocked");
         send({ type: "error", message });
       } finally {
         closeStream();

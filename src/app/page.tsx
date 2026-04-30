@@ -1,6 +1,5 @@
 import { db } from "@/db";
 import { invoices, customers } from "@/db/schema";
-import { eq } from "drizzle-orm";
 import { StatsHeader } from "@/components/stats-header";
 import { InvoiceTable } from "@/components/invoice-table";
 import { seed } from "@/db/seed";
@@ -11,14 +10,13 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   await seed();
 
-  const allInvoices = db.select().from(invoices).all();
+  const allInvoices = await db.select().from(invoices);
+  const allCustomers = await db.select().from(customers);
+  const customerMap = new Map(allCustomers.map((c) => [c.id, c]));
+
   const invoicesWithCustomers: InvoiceWithCustomer[] = allInvoices.map(
     (inv) => {
-      const customer = db
-        .select()
-        .from(customers)
-        .where(eq(customers.id, inv.customerId))
-        .get()!;
+      const customer = customerMap.get(inv.customerId)!;
       return { ...inv, customer };
     }
   );

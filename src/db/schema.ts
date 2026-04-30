@@ -1,6 +1,12 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import {
+  pgTable,
+  text,
+  integer,
+  doublePrecision,
+  boolean,
+} from "drizzle-orm/pg-core";
 
-export const customers = sqliteTable("customers", {
+export const customers = pgTable("customers", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
@@ -11,11 +17,11 @@ export const customers = sqliteTable("customers", {
   createdAt: text("created_at").notNull(),
 });
 
-export const invoices = sqliteTable("invoices", {
+export const invoices = pgTable("invoices", {
   id: text("id").primaryKey(),
   customerId: text("customer_id").notNull(),
   invoiceNumber: text("invoice_number").notNull(),
-  amount: real("amount").notNull(),
+  amount: doublePrecision("amount").notNull(),
   currency: text("currency").default("GBP"),
   dueDate: text("due_date").notNull(),
   daysOverdue: integer("days_overdue").notNull(),
@@ -25,7 +31,7 @@ export const invoices = sqliteTable("invoices", {
   updatedAt: text("updated_at").notNull(),
 });
 
-export const recoveryActions = sqliteTable("recovery_actions", {
+export const recoveryActions = pgTable("recovery_actions", {
   id: text("id").primaryKey(),
   invoiceId: text("invoice_id").notNull(),
   channel: text("channel").notNull(),
@@ -38,42 +44,31 @@ export const recoveryActions = sqliteTable("recovery_actions", {
   createdAt: text("created_at").notNull(),
 });
 
-export const autonomyDecisions = sqliteTable("autonomy_decisions", {
+export const autonomyDecisions = pgTable("autonomy_decisions", {
   id: text("id").primaryKey(),
   invoiceId: text("invoice_id").notNull(),
-  allowed: integer("allowed", { mode: "boolean" }).notNull(),
+  allowed: boolean("allowed").notNull(),
   reasons: text("reasons").notNull(), // JSON
-  amountThresholdPassed: integer("amount_threshold_passed", {
-    mode: "boolean",
-  }).notNull(),
-  disputeCheckPassed: integer("dispute_check_passed", {
-    mode: "boolean",
-  }).notNull(),
-  daysOverduePassed: integer("days_overdue_passed", {
-    mode: "boolean",
-  }).notNull(),
-  specterRiskPassed: integer("specter_risk_passed", {
-    mode: "boolean",
-  }).notNull(),
-  relationshipPassed: integer("relationship_passed", {
-    mode: "boolean",
-  }).notNull(),
+  amountThresholdPassed: boolean("amount_threshold_passed").notNull(),
+  disputeCheckPassed: boolean("dispute_check_passed").notNull(),
+  daysOverduePassed: boolean("days_overdue_passed").notNull(),
+  specterRiskPassed: boolean("specter_risk_passed").notNull(),
+  relationshipPassed: boolean("relationship_passed").notNull(),
   createdAt: text("created_at").notNull(),
 });
 
-
-export const timelineEvents = sqliteTable("timeline_events", {
+export const timelineEvents = pgTable("timeline_events", {
   id: text("id").primaryKey(),
   invoiceId: text("invoice_id").notNull(),
   actor: text("actor").notNull(),
-  // ARRA | White Circle | Debtor | Briefcase | Specter | System
+  // ARRA | Debtor | Briefcase | Specter | System
   message: text("message").notNull(),
   eventType: text("event_type").notNull(),
   // info | success | blocked | call | email | eval | risk
   createdAt: text("created_at").notNull(),
 });
 
-export const specterEnrichments = sqliteTable("specter_enrichments", {
+export const specterEnrichments = pgTable("specter_enrichments", {
   id: text("id").primaryKey(),
   customerId: text("customer_id").notNull(),
   companyName: text("company_name").notNull(),
@@ -84,7 +79,7 @@ export const specterEnrichments = sqliteTable("specter_enrichments", {
   createdAt: text("created_at").notNull(),
 });
 
-export const paymentLinks = sqliteTable("payment_links", {
+export const paymentLinks = pgTable("payment_links", {
   id: text("id").primaryKey(),
   invoiceId: text("invoice_id").notNull(),
   url: text("url").notNull(),

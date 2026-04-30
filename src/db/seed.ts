@@ -195,10 +195,7 @@ const seedSpecter = [
 ];
 
 export async function seed() {
-  const existingCustomers = db
-    .select()
-    .from(customers)
-    .all();
+  const existingCustomers = await db.select().from(customers);
   if (existingCustomers.length > 0) {
     console.log("Database already seeded, skipping.");
     return;
@@ -206,31 +203,19 @@ export async function seed() {
 
   console.log("Seeding database...");
 
-  for (const c of seedCustomers) {
-    db.insert(customers).values(c).run();
-  }
+  await db.insert(customers).values(seedCustomers);
+  await db.insert(invoices).values(seedInvoices);
+  await db.insert(specterEnrichments).values(seedSpecter);
 
-  for (const inv of seedInvoices) {
-    db.insert(invoices).values(inv).run();
-  }
-
-  for (const s of seedSpecter) {
-    db.insert(specterEnrichments).values(s).run();
-  }
-
-  // Initial timeline events
-  for (const inv of seedInvoices) {
-    db.insert(timelineEvents)
-      .values({
-        id: uuid(),
-        invoiceId: inv.id,
-        actor: "System",
-        message: `Invoice ${inv.invoiceNumber} imported from Briefcase`,
-        eventType: "info",
-        createdAt: now,
-      })
-      .run();
-  }
+  const timelineValues = seedInvoices.map((inv) => ({
+    id: uuid(),
+    invoiceId: inv.id,
+    actor: "System",
+    message: `Invoice ${inv.invoiceNumber} imported from Briefcase`,
+    eventType: "info",
+    createdAt: now,
+  }));
+  await db.insert(timelineEvents).values(timelineValues);
 
   console.log("Seed complete: 5 customers, 5 invoices, 5 Specter enrichments");
 }

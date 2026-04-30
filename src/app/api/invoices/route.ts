@@ -1,20 +1,17 @@
 import { db } from "@/db";
 import { invoices, customers } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const allInvoices = db.select().from(invoices).all();
+  const allInvoices = await db.select().from(invoices);
+  const allCustomers = await db.select().from(customers);
+  const customerMap = new Map(allCustomers.map((c) => [c.id, c]));
 
-  const result = allInvoices.map((inv) => {
-    const customer = db
-      .select()
-      .from(customers)
-      .where(eq(customers.id, inv.customerId))
-      .get();
-    return { ...inv, customer };
-  });
+  const result = allInvoices.map((inv) => ({
+    ...inv,
+    customer: customerMap.get(inv.customerId),
+  }));
 
   return Response.json(result);
 }

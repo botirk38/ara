@@ -18,11 +18,11 @@ export default async function InvoiceDetailPage({
 }) {
   await seed();
 
-  const invoice = db
+  const invoiceRows = await db
     .select()
     .from(invoices)
-    .where(eq(invoices.id, params.id))
-    .get();
+    .where(eq(invoices.id, params.id));
+  const invoice = invoiceRows[0];
 
   if (!invoice) {
     return (
@@ -32,25 +32,24 @@ export default async function InvoiceDetailPage({
     );
   }
 
-  const customer = db
+  const customerRows = await db
     .select()
     .from(customers)
-    .where(eq(customers.id, invoice.customerId))
-    .get()!;
+    .where(eq(customers.id, invoice.customerId));
+  const customer = customerRows[0]!;
 
-  const events = db
+  const events = await db
     .select()
     .from(timelineEvents)
     .where(eq(timelineEvents.invoiceId, params.id))
-    .orderBy(timelineEvents.createdAt)
-    .all();
+    .orderBy(timelineEvents.createdAt);
 
-  const latestGate = db
+  const gateRows = await db
     .select()
     .from(autonomyDecisions)
     .where(eq(autonomyDecisions.invoiceId, params.id))
-    .orderBy(desc(autonomyDecisions.createdAt))
-    .get();
+    .orderBy(desc(autonomyDecisions.createdAt));
+  const latestGate = gateRows[0];
 
   const gateResult = latestGate
     ? {

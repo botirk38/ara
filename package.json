@@ -8,14 +8,15 @@
     "start": "next start",
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
-    "db:setup": "bun run db:migrate && bun run db:seed"
+    "db:setup": "bun run db:push"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.54",
+    "@neondatabase/serverless": "^1.1.0",
     "ai": "^6.0.170",
-    "better-sqlite3": "^12.9.0",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.14.0",
     "next": "14.2.35",
@@ -27,7 +28,6 @@
     "zod": "^4.4.1"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

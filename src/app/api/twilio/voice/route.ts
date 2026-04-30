@@ -12,11 +12,11 @@ export async function POST(req: NextRequest) {
     "Hi, this is ARRA calling on behalf of Acme Ltd. We are following up on an overdue invoice. Please contact us at your earliest convenience.";
 
   if (actionId) {
-    const action = db
+    const rows = await db
       .select()
       .from(recoveryActions)
-      .where(eq(recoveryActions.id, actionId))
-      .get();
+      .where(eq(recoveryActions.id, actionId));
+    const action = rows[0];
     if (action?.content) {
       script = action.content;
     }

@@ -11,16 +11,14 @@ export async function POST(req: NextRequest) {
   const speechResult = formData.get("SpeechResult") as string;
 
   if (speechResult) {
-    db.insert(timelineEvents)
-      .values({
-        id: uuid(),
-        invoiceId,
-        actor: "Debtor",
-        message: `"${speechResult}"`,
-        eventType: "info",
-        createdAt: new Date().toISOString(),
-      })
-      .run();
+    await db.insert(timelineEvents).values({
+      id: uuid(),
+      invoiceId,
+      actor: "Debtor",
+      message: `"${speechResult}"`,
+      eventType: "info",
+      createdAt: new Date().toISOString(),
+    });
   }
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>

@@ -15,42 +15,44 @@ export async function POST(
 ) {
   const { id } = params;
 
-  const invoice = db.select().from(invoices).where(eq(invoices.id, id)).get();
+  const invoiceRows = await db
+    .select()
+    .from(invoices)
+    .where(eq(invoices.id, id));
+  const invoice = invoiceRows[0];
   if (!invoice) {
     return Response.json({ error: "Invoice not found" }, { status: 404 });
   }
 
   // Delete related records
-  db.delete(recoveryActions)
-    .where(eq(recoveryActions.invoiceId, id))
-    .run();
-  db.delete(autonomyDecisions)
-    .where(eq(autonomyDecisions.invoiceId, id))
-    .run();
-  db.delete(timelineEvents)
-    .where(eq(timelineEvents.invoiceId, id))
-    .run();
-  db.delete(paymentLinks)
-    .where(eq(paymentLinks.invoiceId, id))
-    .run();
+  await db
+    .delete(recoveryActions)
+    .where(eq(recoveryActions.invoiceId, id));
+  await db
+    .delete(autonomyDecisions)
+    .where(eq(autonomyDecisions.invoiceId, id));
+  await db
+    .delete(timelineEvents)
+    .where(eq(timelineEvents.invoiceId, id));
+  await db
+    .delete(paymentLinks)
+    .where(eq(paymentLinks.invoiceId, id));
 
   // Reset invoice status
-  db.update(invoices)
+  await db
+    .update(invoices)
     .set({ status: "overdue", updatedAt: new Date().toISOString() })
-    .where(eq(invoices.id, id))
-    .run();
+    .where(eq(invoices.id, id));
 
   // Re-add initial timeline event
-  db.insert(timelineEvents)
-    .values({
-      id: uuid(),
-      invoiceId: id,
-      actor: "System",
-      message: `Invoice ${invoice.invoiceNumber} imported from Briefcase`,
-      eventType: "info",
-      createdAt: new Date().toISOString(),
-    })
-    .run();
+  await db.insert(timelineEvents).values({
+    id: uuid(),
+    invoiceId: id,
+    actor: "System",
+    message: `Invoice ${invoice.invoiceNumber} imported from Briefcase`,
+    eventType: "info",
+    createdAt: new Date().toISOString(),
+  });
 
   return Response.json({ success: true });
 }

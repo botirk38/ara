@@ -6,11 +6,12 @@ import type { SpecterEnrichment } from "./types";
 export async function enrichDebtor(
   customerId: string
 ): Promise<SpecterEnrichment> {
-  const existing = db
+  const rows = await db
     .select()
     .from(specterEnrichments)
-    .where(eq(specterEnrichments.customerId, customerId))
-    .get();
+    .where(eq(specterEnrichments.customerId, customerId));
+
+  const existing = rows[0];
 
   if (existing) {
     return {
