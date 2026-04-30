@@ -14,6 +14,8 @@ import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { SYSTEM_PROMPT } from "@/lib/agent/system-prompt";
 import { logEvent } from "@/lib/timeline";
+import { Resend } from "resend";
+import twilio from "twilio";
 
 export async function POST(
   _req: Request,
@@ -246,8 +248,7 @@ ${
             send({ type: "timeline", event: evt6 });
 
             try {
-              const twilioModule = await import("twilio");
-              const client = twilioModule.default(
+              const client = twilio(
                 process.env.TWILIO_ACCOUNT_SID,
                 process.env.TWILIO_AUTH_TOKEN
               );
@@ -309,8 +310,7 @@ ${
           ) {
             let emailSent = false;
             try {
-              const resendModule = await import("resend");
-              const resend = new resendModule.Resend(
+              const resend = new Resend(
                 process.env.RESEND_API_KEY
               );
 
@@ -388,8 +388,7 @@ ${
         if (channel === "phone" && channelDelivered) {
           if (process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL) {
             try {
-              const resendModule2 = await import("resend");
-              const resend = new resendModule2.Resend(
+              const resend = new Resend(
                 process.env.RESEND_API_KEY
               );
 
