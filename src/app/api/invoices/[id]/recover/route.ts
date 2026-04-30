@@ -259,10 +259,11 @@ ${
           if (
             !process.env.TWILIO_ACCOUNT_SID ||
             !process.env.TWILIO_AUTH_TOKEN ||
-            !process.env.TWILIO_PHONE_NUMBER
+            !process.env.TWILIO_PHONE_NUMBER ||
+            !process.env.NEXT_PUBLIC_BASE_URL
           ) {
             throw new Error(
-              "TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER are required for outbound calls."
+              "TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, and NEXT_PUBLIC_BASE_URL are required for outbound calls."
             );
           }
 
@@ -280,12 +281,6 @@ ${
               process.env.TWILIO_ACCOUNT_SID,
               process.env.TWILIO_AUTH_TOKEN
             );
-
-            if (!process.env.NEXT_PUBLIC_BASE_URL) {
-              throw new Error(
-                "NEXT_PUBLIC_BASE_URL is required for Twilio webhook callbacks."
-              );
-            }
 
             await client.calls.create({
               to: customer.phone,
@@ -381,7 +376,7 @@ ${
         send({ type: "timeline", event: evt9 });
 
         // 9. Send confirmation email with payment link
-        if (channel === "phone") {
+        if (channel === "phone" && channelDelivered) {
           try {
             const resendModule2 = await import("resend");
             const resend = new resendModule2.Resend(process.env.RESEND_API_KEY);
