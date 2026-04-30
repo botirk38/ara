@@ -19,6 +19,7 @@ import {
   User,
   AlertTriangle,
 } from "lucide-react";
+import { formatAmount } from "@/lib/format";
 
 interface RecoveryChatProps {
   invoiceId: string;
@@ -217,7 +218,7 @@ export function RecoveryChat({
                       key={part.approval.id}
                       icon={<Link2 className="h-4 w-4 text-green-600" />}
                       title="Create Payment Link"
-                      detail={`For invoice ${inp.invoiceNumber || ""} — £${inp.amount != null ? Number(inp.amount).toLocaleString() : "?"}`}
+                      detail={`For invoice ${inp.invoiceNumber || ""} — £${inp.amount != null ? formatAmount(Number(inp.amount)) : "?"}`}
                       onApprove={() =>
                         addToolApprovalResponse({
                           id: part.approval.id,
@@ -346,7 +347,7 @@ export function RecoveryChat({
                     <ToolResultBadge
                       key={i}
                       icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-                      label={`Loaded: ${inv?.invoiceNumber || "invoice"} — £${inv?.amount != null ? Number(inv.amount).toLocaleString() : "?"}`}
+                      label={`Loaded: ${inv?.invoiceNumber || "invoice"} — £${inv?.amount != null ? formatAmount(Number(inv.amount)) : "?"}`}
                       success
                     />
                   );

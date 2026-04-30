@@ -1,6 +1,7 @@
 "use client";
 
 import type { AutonomyGateResult } from "@/lib/types";
+import { formatAmount } from "@/lib/format";
 import { CheckCircle2, XCircle } from "lucide-react";
 
 interface RightPanelProps {
@@ -39,7 +40,7 @@ export function RightPanel({
           <Row label="Customer" value={invoice.customer.name} />
           <Row
             label="Amount"
-            value={`£${invoice.amount.toLocaleString()}`}
+            value={`£${formatAmount(invoice.amount)}`}
           />
           <Row label="Due" value={invoice.dueDate} />
           <Row label="Overdue" value={`${invoice.daysOverdue} days`} />

@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "Missing payload" }, { status: 400 });
   }
 
-  let payload;
+  let payload: { type?: string; actions?: { action_id: string; value: string }[]; user?: { name?: string; username?: string }; response_url?: string };
   try {
     payload = JSON.parse(payloadStr);
   } catch {
@@ -66,7 +66,9 @@ export async function POST(req: Request) {
     return Response.json({ ok: true });
   }
 
-  for (const action of payload.actions || []) {
+  const actions = Array.isArray(payload.actions) ? payload.actions : [];
+
+  for (const action of actions) {
     if (
       action.action_id !== "arra_approve" &&
       action.action_id !== "arra_deny"
@@ -74,16 +76,18 @@ export async function POST(req: Request) {
       continue;
     }
 
-    let approvalId: string;
+    let actionValue: { approvalId: string };
     try {
-      approvalId = JSON.parse(action.value).approvalId;
+      actionValue = JSON.parse(action.value);
     } catch {
       continue;
     }
+    const { approvalId } = actionValue;
     if (!approvalId) continue;
     const decision =
       action.action_id === "arra_approve" ? "approved" : "denied";
-    const decidedBy = payload.user?.name || payload.user?.username || "unknown";
+    const user = payload.user ?? {};
+    const decidedBy = String(user.name || user.username || "unknown");
 
     await db
       .update(pendingApprovals)
@@ -95,8 +99,9 @@ export async function POST(req: Request) {
       .where(eq(pendingApprovals.id, approvalId));
 
     // Update the Slack message to show the decision
-    if (payload.response_url) {
-      await fetch(payload.response_url, {
+    const responseUrl = typeof payload.response_url === "string" ? payload.response_url : null;
+    if (responseUrl) {
+      await fetch(responseUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

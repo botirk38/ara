@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import type { InvoiceWithCustomer, RiskLevel } from "@/lib/types";
 import { getRiskLevel } from "@/lib/types";
+import { formatAmount } from "@/lib/format";
 
 function RiskBadge({ level }: { level: RiskLevel }) {
   const styles = {
@@ -109,7 +110,7 @@ export function InvoiceTable({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-semibold text-gray-900">
-                      £{inv.amount.toLocaleString()}
+                      £{formatAmount(inv.amount)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
