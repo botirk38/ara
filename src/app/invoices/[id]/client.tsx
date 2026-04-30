@@ -15,7 +15,8 @@ import { SponsorCards } from "@/components/sponsor-cards";
 import { RightPanel } from "@/components/right-panel";
 import { RecoveryButton } from "@/components/recovery-button";
 import { RecoveryChat } from "@/components/recovery-chat";
-import { ArrowLeft, MessageSquare, List } from "lucide-react";
+import { ArrowLeft, MessageSquare, List, Phone } from "lucide-react";
+import { WhatsAppChat } from "@/components/whatsapp-chat";
 
 interface Props {
   invoice: InvoiceWithCustomer;
@@ -98,7 +99,7 @@ export function InvoiceDetailClient({
     []
   );
 
-  const [mode, setMode] = useState<"auto" | "chat">("auto");
+  const [mode, setMode] = useState<"auto" | "chat" | "whatsapp">("auto");
 
   const risk = getRiskLevel(invoice.daysOverdue, invoice.amount);
   const riskColors = {
@@ -189,6 +190,17 @@ export function InvoiceDetailClient({
                   <MessageSquare className="h-3.5 w-3.5" />
                   Chat
                 </button>
+                <button
+                  onClick={() => setMode("whatsapp")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                    mode === "whatsapp"
+                      ? "bg-green-600 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <Phone className="h-3.5 w-3.5" />
+                  WhatsApp
+                </button>
               </div>
               {mode === "auto" && (
                 <RecoveryButton
@@ -204,7 +216,7 @@ export function InvoiceDetailClient({
           </div>
         </div>
 
-        {mode === "auto" ? (
+        {mode === "auto" && (
           <>
             {/* Sponsor Cards */}
             <SponsorCards state={state} />
@@ -237,7 +249,9 @@ export function InvoiceDetailClient({
               </div>
             </div>
           </>
-        ) : (
+        )}
+
+        {mode === "chat" && (
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <div className="lg:col-span-3">
               <RecoveryChat
@@ -245,6 +259,22 @@ export function InvoiceDetailClient({
                 invoiceNumber={invoice.invoiceNumber}
                 customerName={invoice.customer.name}
               />
+            </div>
+            <div className="lg:col-span-2">
+              <RightPanel
+                invoice={invoice}
+                gateResult={gateResult}
+                actionContent={actionContent}
+                actionChannel={actionChannel}
+              />
+            </div>
+          </div>
+        )}
+
+        {mode === "whatsapp" && (
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="lg:col-span-3">
+              <WhatsAppChat />
             </div>
             <div className="lg:col-span-2">
               <RightPanel

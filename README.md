@@ -81,6 +81,9 @@ RESEND_FROM_EMAIL=
 
 # Deployment URL (required for webhooks and payment links)
 NEXT_PUBLIC_BASE_URL=
+
+# WhatsApp recovery via Wassist (required for WhatsApp chat view)
+WASSIST_API_KEY=
 ```
 
 All environment variables are required. The app will throw clear errors if any are missing.
