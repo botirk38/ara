@@ -8,8 +8,10 @@ export async function POST(req: NextRequest) {
   const actionId = searchParams.get("actionId");
   const invoiceId = searchParams.get("invoiceId");
 
-  let script =
-    "Hi, this is ARRA calling on behalf of Acme Ltd. We are following up on an overdue invoice. Please contact us at your earliest convenience.";
+  const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME;
+  let script = companyName
+    ? `Hi, this is ARRA calling on behalf of ${companyName}. We are following up on an overdue invoice. Please contact us at your earliest convenience.`
+    : "Hi, this is ARRA calling to follow up on an overdue invoice. Please contact us at your earliest convenience.";
 
   if (actionId) {
     const rows = await db

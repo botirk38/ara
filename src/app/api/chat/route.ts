@@ -205,82 +205,58 @@ export async function POST(req: Request) {
             createdAt: new Date().toISOString(),
           });
 
-          if (
-            process.env.TWILIO_ACCOUNT_SID &&
+          const twilioModule = await import("twilio");
+          const client = twilioModule.default(
+            process.env.TWILIO_ACCOUNT_SID,
             process.env.TWILIO_AUTH_TOKEN
-          ) {
-            try {
-              const twilioModule = await import("twilio");
-              const client = twilioModule.default(
-                process.env.TWILIO_ACCOUNT_SID!,
-                process.env.TWILIO_AUTH_TOKEN!
-              );
+          );
 
-              const baseUrl =
-                process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-              await client.calls.create({
-                to: phone,
-                from: process.env.TWILIO_PHONE_NUMBER!,
-                url: `${baseUrl}/api/twilio/voice?invoiceId=${invoiceId}&actionId=${actionId}`,
-              });
-
-              await db
-                .update(recoveryActions)
-                .set({ status: "called" })
-                .where(eq(recoveryActions.id, actionId));
-
-              await logEvent(
-                invoiceId,
-                "ARRA",
-                `Placed outbound call to ${customerName} at ${phone} via Twilio`,
-                "call"
-              );
-
-              return {
-                status: "called",
-                actionId,
-                message: `Call placed to ${customerName}`,
-              };
-            } catch (err) {
-              await logEvent(
-                invoiceId,
-                "ARRA",
-                `Call failed: ${err instanceof Error ? err.message : "Unknown error"}`,
-                "info"
-              );
-              return {
-                status: "failed",
-                actionId,
-                error: err instanceof Error ? err.message : "Unknown error",
-              };
-            }
+          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+          if (!baseUrl) {
+            return {
+              status: "failed",
+              actionId,
+              error: "NEXT_PUBLIC_BASE_URL is not configured",
+            };
           }
 
-          // Mock call for demo
-          await db
-            .update(recoveryActions)
-            .set({ status: "called" })
-            .where(eq(recoveryActions.id, actionId));
+          try {
+            await client.calls.create({
+              to: phone,
+              from: process.env.TWILIO_PHONE_NUMBER!,
+              url: `${baseUrl}/api/twilio/voice?invoiceId=${invoiceId}&actionId=${actionId}`,
+            });
 
-          await logEvent(
-            invoiceId,
-            "ARRA",
-            `Placed outbound call to ${customerName} (demo mode)`,
-            "call"
-          );
+            await db
+              .update(recoveryActions)
+              .set({ status: "called" })
+              .where(eq(recoveryActions.id, actionId));
 
-          await logEvent(
-            invoiceId,
-            "Debtor",
-            '"We can pay Friday"',
-            "success"
-          );
+            await logEvent(
+              invoiceId,
+              "ARRA",
+              `Placed outbound call to ${customerName} at ${phone}`,
+              "call"
+            );
 
-          return {
-            status: "called",
-            actionId,
-            message: `Call placed to ${customerName} — debtor promised to pay Friday`,
-          };
+            return {
+              status: "called",
+              actionId,
+              message: `Call placed to ${customerName}`,
+            };
+          } catch (err) {
+            await logEvent(
+              invoiceId,
+              "ARRA",
+              `Call failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+              "info"
+            );
+            return {
+              status: "failed",
+              actionId,
+              error: err instanceof Error ? err.message : "Unknown error",
+            };
+          }
         },
       }),
 
@@ -307,72 +283,49 @@ export async function POST(req: Request) {
             createdAt: new Date().toISOString(),
           });
 
-          if (process.env.RESEND_API_KEY) {
-            try {
-              const resendModule = await import("resend");
-              const resend = new resendModule.Resend(
-                process.env.RESEND_API_KEY
-              );
-
-              await resend.emails.send({
-                from:
-                  process.env.RESEND_FROM_EMAIL ||
-                  "arra@briefcase-collect.demo",
-                to,
-                subject,
-                text: body,
-              });
-
-              await db
-                .update(recoveryActions)
-                .set({ status: "sent" })
-                .where(eq(recoveryActions.id, actionId));
-
-              await logEvent(
-                invoiceId,
-                "ARRA",
-                `Recovery email sent to ${customerName} at ${to} via Resend`,
-                "email"
-              );
-
-              return {
-                status: "sent",
-                actionId,
-                message: `Email sent to ${customerName}`,
-              };
-            } catch (err) {
-              await logEvent(
-                invoiceId,
-                "ARRA",
-                `Email failed: ${err instanceof Error ? err.message : "Unknown error"}`,
-                "info"
-              );
-              return {
-                status: "failed",
-                actionId,
-                error: err instanceof Error ? err.message : "Unknown error",
-              };
-            }
-          }
-
-          // Mock email for demo
-          await db
-            .update(recoveryActions)
-            .set({ status: "sent" })
-            .where(eq(recoveryActions.id, actionId));
-
-          await logEvent(
-            invoiceId,
-            "ARRA",
-            `Recovery email sent to ${customerName} at ${to} (demo mode)`,
-            "email"
+          const resendModule = await import("resend");
+          const resend = new resendModule.Resend(
+            process.env.RESEND_API_KEY
           );
 
-          return {
-            status: "sent",
-            actionId,
-            message: `Email sent to ${customerName}`,
-          };
+          try {
+            await resend.emails.send({
+              from: process.env.RESEND_FROM_EMAIL!,
+              to,
+              subject,
+              text: body,
+            });
+
+            await db
+              .update(recoveryActions)
+              .set({ status: "sent" })
+              .where(eq(recoveryActions.id, actionId));
+
+            await logEvent(
+              invoiceId,
+              "ARRA",
+              `Recovery email sent to ${customerName} at ${to}`,
+              "email"
+            );
+
+            return {
+              status: "sent",
+              actionId,
+              message: `Email sent to ${customerName}`,
+            };
+          } catch (err) {
+            await logEvent(
+              invoiceId,
+              "ARRA",
+              `Email failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+              "info"
+            );
+            return {
+              status: "failed",
+              actionId,
+              error: err instanceof Error ? err.message : "Unknown error",
+            };
+          }
         },
       }),
 
@@ -394,7 +347,14 @@ export async function POST(req: Request) {
           customerEmail,
           amount,
         }) => {
-          const paymentLinkUrl = `https://pay.briefcase-collect.demo/invoice/${invoiceNumber}`;
+          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+          if (!baseUrl) {
+            return {
+              paymentLink: null,
+              message: "NEXT_PUBLIC_BASE_URL is not configured",
+            };
+          }
+          const paymentLinkUrl = `${baseUrl}/pay/${invoiceNumber}`;
           await db.insert(paymentLinks).values({
             id: uuid(),
             invoiceId,
@@ -410,43 +370,39 @@ export async function POST(req: Request) {
             "success"
           );
 
-          // Send confirmation email with payment link
-          if (process.env.RESEND_API_KEY) {
-            try {
-              const resendModule = await import("resend");
-              const resend = new resendModule.Resend(
-                process.env.RESEND_API_KEY
-              );
+          const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME;
+          if (!companyName) {
+            return {
+              paymentLink: paymentLinkUrl,
+              message: "Payment link generated but NEXT_PUBLIC_COMPANY_NAME is not configured for confirmation email",
+            };
+          }
 
-              await resend.emails.send({
-                from:
-                  process.env.RESEND_FROM_EMAIL ||
-                  "arra@briefcase-collect.demo",
-                to: customerEmail,
-                subject: `Payment link for invoice ${invoiceNumber}`,
-                text: `Hi ${customerName},\n\nHere is your payment link for invoice ${invoiceNumber} (£${amount.toLocaleString()}):\n\n${paymentLinkUrl}\n\nThanks,\nARRA on behalf of Acme Ltd`,
-              });
+          const resendModule = await import("resend");
+          const resend = new resendModule.Resend(
+            process.env.RESEND_API_KEY
+          );
 
-              await logEvent(
-                invoiceId,
-                "ARRA",
-                `Confirmation email sent to ${customerEmail} with payment link`,
-                "email"
-              );
-            } catch {
-              await logEvent(
-                invoiceId,
-                "ARRA",
-                "Confirmation email queued (will retry)",
-                "info"
-              );
-            }
-          } else {
+          try {
+            await resend.emails.send({
+              from: process.env.RESEND_FROM_EMAIL!,
+              to: customerEmail,
+              subject: `Payment link for invoice ${invoiceNumber}`,
+              text: `Hi ${customerName},\n\nHere is your payment link for invoice ${invoiceNumber} (£${amount.toLocaleString()}):\n\n${paymentLinkUrl}\n\nThanks,\nARRA on behalf of ${companyName}`,
+            });
+
             await logEvent(
               invoiceId,
               "ARRA",
-              `Confirmation email sent to ${customerEmail} with payment link (demo mode)`,
+              `Confirmation email sent to ${customerEmail} with payment link`,
               "email"
+            );
+          } catch {
+            await logEvent(
+              invoiceId,
+              "ARRA",
+              "Confirmation email queued (will retry)",
+              "info"
             );
           }
 

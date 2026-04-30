@@ -194,11 +194,14 @@ const seedSpecter = [
   },
 ];
 
-let seedPromise: Promise<void> | null = null;
+let seeded = false;
 
 async function doSeed() {
+  if (seeded) return;
+
   const existingCustomers = await db.select().from(customers);
   if (existingCustomers.length > 0) {
+    seeded = true;
     return;
   }
 
@@ -218,10 +221,14 @@ async function doSeed() {
   }));
   await db.insert(timelineEvents).values(timelineValues).onConflictDoNothing();
 
+  seeded = true;
   console.log("Seed complete: 5 customers, 5 invoices, 5 Specter enrichments");
 }
 
+let seedPromise: Promise<void> | null = null;
+
 export function seed() {
+  if (seeded) return Promise.resolve();
   if (!seedPromise) {
     seedPromise = doSeed().catch((err) => {
       seedPromise = null;

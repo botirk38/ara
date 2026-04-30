@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { invoices, customers } from "@/db/schema";
 import { StatsHeader } from "@/components/stats-header";
 import { InvoiceTable } from "@/components/invoice-table";
+import { CreateInvoiceForm } from "@/components/create-invoice-form";
 import { seed } from "@/db/seed";
 import type { InvoiceWithCustomer, DashboardStats } from "@/lib/types";
 
@@ -9,6 +10,8 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   await seed();
+
+  const specterEnabled = !!process.env.SPECTER_API_KEY;
 
   const allInvoices = await db.select().from(invoices);
   const allCustomers = await db.select().from(customers);
@@ -54,8 +57,12 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="flex items-center gap-4 text-sm text-gray-500">
-            <span>Specter enabled</span>
-            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <span>Specter {specterEnabled ? "enabled" : "disabled"}</span>
+            <div
+              className={`w-2 h-2 rounded-full ${
+                specterEnabled ? "bg-green-500" : "bg-red-400"
+              }`}
+            />
           </div>
         </div>
       </header>
@@ -63,10 +70,11 @@ export default async function HomePage() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         <StatsHeader stats={stats} />
 
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
             Overdue Invoices
           </h2>
+          <CreateInvoiceForm />
         </div>
 
         <InvoiceTable invoices={invoicesWithCustomers} />

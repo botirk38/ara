@@ -15,8 +15,9 @@ import { SponsorCards } from "@/components/sponsor-cards";
 import { RightPanel } from "@/components/right-panel";
 import { RecoveryButton } from "@/components/recovery-button";
 import { RecoveryChat } from "@/components/recovery-chat";
-import { ArrowLeft, MessageSquare, List, Phone } from "lucide-react";
+import { ArrowLeft, MessageSquare, List, Phone, RotateCcw } from "lucide-react";
 import { WhatsAppChat } from "@/components/whatsapp-chat";
+import { EditInvoiceForm } from "@/components/edit-invoice-form";
 
 interface Props {
   invoice: InvoiceWithCustomer;
@@ -100,6 +101,21 @@ export function InvoiceDetailClient({
   );
 
   const [mode, setMode] = useState<"auto" | "chat" | "whatsapp">("auto");
+  const [resetting, setResetting] = useState(false);
+
+  const handleReset = useCallback(async () => {
+    setResetting(true);
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/reset-demo`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        window.location.reload();
+      }
+    } finally {
+      setResetting(false);
+    }
+  }, [invoice.id]);
 
   const risk = getRiskLevel(invoice.daysOverdue, invoice.amount);
   const riskColors = {
@@ -166,6 +182,17 @@ export function InvoiceDetailClient({
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <EditInvoiceForm invoice={invoice} />
+              {invoice.status !== "overdue" && (
+                <button
+                  onClick={handleReset}
+                  disabled={resetting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                >
+                  <RotateCcw className={`h-3.5 w-3.5 ${resetting ? "animate-spin" : ""}`} />
+                  Reset
+                </button>
+              )}
               {/* Mode toggle */}
               <div className="flex rounded-lg border border-gray-200 overflow-hidden">
                 <button
