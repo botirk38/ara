@@ -154,7 +154,6 @@ export async function enrichDebtor(
       revenueSignal,
       newsSignal,
       raw: JSON.stringify(company),
-      createdAt: new Date().toISOString(),
     };
 
     if (existing.length > 0) {
@@ -163,7 +162,9 @@ export async function enrichDebtor(
         .set(data)
         .where(eq(specterEnrichments.customerId, customerId));
     } else {
-      await db.insert(specterEnrichments).values({ id: uuid(), ...data });
+      await db
+        .insert(specterEnrichments)
+        .values({ id: uuid(), ...data, createdAt: new Date().toISOString() });
     }
 
     return {
