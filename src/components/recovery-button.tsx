@@ -29,7 +29,7 @@ export function RecoveryButton({
   const [phase, setPhase] = useState<Phase>(
     initialStatus === "human_review"
       ? "blocked"
-      : initialStatus === "promise_to_pay" || initialStatus === "paid"
+      : initialStatus === "promise_to_pay" || initialStatus === "paid" || initialStatus === "sent"
       ? "complete"
       : initialStatus === "recovering"
       ? "running"

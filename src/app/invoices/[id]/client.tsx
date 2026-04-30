@@ -48,7 +48,7 @@ export function InvoiceDetailClient({
     phase:
       invoice.status === "human_review"
         ? "blocked"
-        : invoice.status === "promise_to_pay" || invoice.status === "paid"
+        : invoice.status === "promise_to_pay" || invoice.status === "paid" || invoice.status === "sent"
         ? "complete"
         : invoice.status === "recovering"
         ? "running"

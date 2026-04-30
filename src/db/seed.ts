@@ -194,18 +194,19 @@ const seedSpecter = [
   },
 ];
 
-export async function seed() {
+let seedPromise: Promise<void> | null = null;
+
+async function doSeed() {
   const existingCustomers = await db.select().from(customers);
   if (existingCustomers.length > 0) {
-    console.log("Database already seeded, skipping.");
     return;
   }
 
   console.log("Seeding database...");
 
-  await db.insert(customers).values(seedCustomers);
-  await db.insert(invoices).values(seedInvoices);
-  await db.insert(specterEnrichments).values(seedSpecter);
+  await db.insert(customers).values(seedCustomers).onConflictDoNothing();
+  await db.insert(invoices).values(seedInvoices).onConflictDoNothing();
+  await db.insert(specterEnrichments).values(seedSpecter).onConflictDoNothing();
 
   const timelineValues = seedInvoices.map((inv) => ({
     id: uuid(),
@@ -215,7 +216,14 @@ export async function seed() {
     eventType: "info",
     createdAt: now,
   }));
-  await db.insert(timelineEvents).values(timelineValues);
+  await db.insert(timelineEvents).values(timelineValues).onConflictDoNothing();
 
   console.log("Seed complete: 5 customers, 5 invoices, 5 Specter enrichments");
+}
+
+export function seed() {
+  if (!seedPromise) {
+    seedPromise = doSeed();
+  }
+  return seedPromise;
 }

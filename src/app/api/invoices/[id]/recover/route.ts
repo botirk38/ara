@@ -446,7 +446,7 @@ ${
 
         // 10. Update invoice status
         const newStatus =
-          channel === "phone" ? "promise_to_pay" : "recovering";
+          channel === "phone" ? "promise_to_pay" : "sent";
         await db
           .update(invoices)
           .set({ status: newStatus, updatedAt: new Date().toISOString() })
