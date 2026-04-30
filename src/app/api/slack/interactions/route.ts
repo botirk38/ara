@@ -17,10 +17,14 @@ function verifySlackSignature(
       .update(sigBasestring)
       .digest("hex");
 
-  return crypto.timingSafeEqual(
-    Buffer.from(mySignature),
-    Buffer.from(signature)
-  );
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(mySignature),
+      Buffer.from(signature)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(req: Request) {
@@ -34,7 +38,8 @@ export async function POST(req: Request) {
 
     // Reject requests older than 5 minutes
     const now = Math.floor(Date.now() / 1000);
-    if (Math.abs(now - parseInt(timestamp)) > 300) {
+    const parsedTimestamp = parseInt(timestamp);
+    if (isNaN(parsedTimestamp) || Math.abs(now - parsedTimestamp) > 300) {
       return Response.json({ error: "Request too old" }, { status: 403 });
     }
 

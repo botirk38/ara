@@ -521,8 +521,8 @@ export async function POST(req: Request) {
             context,
           });
 
-          // Poll for Slack decision (up to 5 minutes for streaming context)
-          for (let i = 0; i < 60; i++) {
+          // Poll for Slack decision (up to ~100s to stay within maxDuration of 120s)
+          for (let i = 0; i < 20; i++) {
             await new Promise((r) => setTimeout(r, 5000));
             const result = await checkApprovalDecision(approvalId);
             if (result) {
