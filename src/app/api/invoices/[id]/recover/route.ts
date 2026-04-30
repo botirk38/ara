@@ -291,10 +291,11 @@ ${
               );
               send({ type: "timeline", event: evt7 });
             } catch (err) {
+              channelDelivered = false;
               const evt7 = await logEvent(
                 id,
                 "ARRA",
-                `Call failed: ${err instanceof Error ? err.message : "Unknown error"} — continuing with email fallback`,
+                `Call failed: ${err instanceof Error ? err.message : "Unknown error"} — requires manual follow-up`,
                 "info"
               );
               send({ type: "timeline", event: evt7 });

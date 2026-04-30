@@ -223,7 +223,10 @@ async function doSeed() {
 
 export function seed() {
   if (!seedPromise) {
-    seedPromise = doSeed();
+    seedPromise = doSeed().catch((err) => {
+      seedPromise = null;
+      throw err;
+    });
   }
   return seedPromise;
 }
