@@ -38,9 +38,14 @@ export async function POST(
   await db
     .delete(paymentLinks)
     .where(eq(paymentLinks.invoiceId, id));
-  await db
-    .delete(pendingApprovals)
-    .where(eq(pendingApprovals.invoiceId, id));
+
+  try {
+    await db
+      .delete(pendingApprovals)
+      .where(eq(pendingApprovals.invoiceId, id));
+  } catch {
+    // Table may not exist yet if migrations haven't been run
+  }
 
   await db
     .update(invoices)
