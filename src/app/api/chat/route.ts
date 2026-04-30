@@ -207,11 +207,6 @@ export async function POST(req: Request) {
             createdAt: new Date().toISOString(),
           });
 
-          const client = twilio(
-            process.env.TWILIO_ACCOUNT_SID,
-            process.env.TWILIO_AUTH_TOKEN
-          );
-
           const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
           if (!baseUrl) {
             return {
@@ -222,6 +217,11 @@ export async function POST(req: Request) {
           }
 
           try {
+            const client = twilio(
+              process.env.TWILIO_ACCOUNT_SID,
+              process.env.TWILIO_AUTH_TOKEN
+            );
+
             await client.calls.create({
               to: phone,
               from: process.env.TWILIO_PHONE_NUMBER!,

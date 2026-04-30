@@ -305,52 +305,63 @@ ${
         }
 
         // 8. Create payment link
-        const paymentLinkUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/pay/${invoice.invoiceNumber}`;
-        await db.insert(paymentLinks).values({
-          id: uuid(),
-          invoiceId: id,
-          url: paymentLinkUrl,
-          status: "generated",
-          createdAt: new Date().toISOString(),
-        });
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+        if (!baseUrl) {
+          const evt9 = await logEvent(
+            id,
+            "ARRA",
+            "Payment link generation skipped: NEXT_PUBLIC_BASE_URL not configured",
+            "info"
+          );
+          send({ type: "timeline", event: evt9 });
+        } else {
+          const paymentLinkUrl = `${baseUrl}/pay/${invoice.invoiceNumber}`;
+          await db.insert(paymentLinks).values({
+            id: uuid(),
+            invoiceId: id,
+            url: paymentLinkUrl,
+            status: "generated",
+            createdAt: new Date().toISOString(),
+          });
 
-        const evt9 = await logEvent(
-          id,
-          "ARRA",
-          `Payment link generated: ${paymentLinkUrl}`,
-          "success"
-        );
-        send({ type: "timeline", event: evt9 });
+          const evt9 = await logEvent(
+            id,
+            "ARRA",
+            `Payment link generated: ${paymentLinkUrl}`,
+            "success"
+          );
+          send({ type: "timeline", event: evt9 });
 
-        // 9. Send confirmation email with payment link
-        if (channel === "phone" && channelDelivered) {
-          try {
-            const resend = new Resend(process.env.RESEND_API_KEY);
+          // 9. Send confirmation email with payment link
+          if (channel === "phone" && channelDelivered) {
+            try {
+              const resend = new Resend(process.env.RESEND_API_KEY);
 
-            const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME;
+              const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME;
 
-            await resend.emails.send({
-              from: process.env.RESEND_FROM_EMAIL!,
-              to: customer.email,
-              subject: `Confirmation for invoice ${invoice.invoiceNumber}`,
-              text: `Hi ${customer.name},\n\nThanks for speaking with us today. As discussed, invoice ${invoice.invoiceNumber} for £${invoice.amount.toLocaleString()} is expected to be paid.\n\nYou can use this payment link:\n${paymentLinkUrl}\n\nThanks,\nARRA${companyName ? ` on behalf of ${companyName}` : ""}`,
-            });
+              await resend.emails.send({
+                from: process.env.RESEND_FROM_EMAIL!,
+                to: customer.email,
+                subject: `Confirmation for invoice ${invoice.invoiceNumber}`,
+                text: `Hi ${customer.name},\n\nThanks for speaking with us today. As discussed, invoice ${invoice.invoiceNumber} for £${invoice.amount.toLocaleString()} is expected to be paid.\n\nYou can use this payment link:\n${paymentLinkUrl}\n\nThanks,\nARRA${companyName ? ` on behalf of ${companyName}` : ""}`,
+              });
 
-            const evt10 = await logEvent(
-              id,
-              "ARRA",
-              `Confirmation email sent to ${customer.email} with payment link`,
-              "email"
-            );
-            send({ type: "timeline", event: evt10 });
-          } catch (err) {
-            const evt10 = await logEvent(
-              id,
-              "ARRA",
-              `Confirmation email failed: ${err instanceof Error ? err.message : "Unknown error"}`,
-              "info"
-            );
-            send({ type: "timeline", event: evt10 });
+              const evt10 = await logEvent(
+                id,
+                "ARRA",
+                `Confirmation email sent to ${customer.email} with payment link`,
+                "email"
+              );
+              send({ type: "timeline", event: evt10 });
+            } catch (err) {
+              const evt10 = await logEvent(
+                id,
+                "ARRA",
+                `Confirmation email failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+                "info"
+              );
+              send({ type: "timeline", event: evt10 });
+            }
           }
         }
 
