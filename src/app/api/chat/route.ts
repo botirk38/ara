@@ -289,11 +289,19 @@ export async function POST(req: Request) {
             createdAt: new Date().toISOString(),
           });
 
+          if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+            return {
+              status: "failed",
+              actionId,
+              error: "RESEND_API_KEY or RESEND_FROM_EMAIL not configured",
+            };
+          }
+
           const resend = new Resend(process.env.RESEND_API_KEY);
 
           try {
             await resend.emails.send({
-              from: process.env.RESEND_FROM_EMAIL!,
+              from: process.env.RESEND_FROM_EMAIL,
               to,
               subject,
               text: body,
@@ -375,11 +383,12 @@ export async function POST(req: Request) {
 
           const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME;
 
+          if (process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL) {
           const resend = new Resend(process.env.RESEND_API_KEY);
 
           try {
             await resend.emails.send({
-              from: process.env.RESEND_FROM_EMAIL!,
+              from: process.env.RESEND_FROM_EMAIL,
               to: customerEmail,
               subject: `Payment link for invoice ${invoiceNumber}`,
               text: `Hi ${customerName},\n\nHere is your payment link for invoice ${invoiceNumber} (£${amount.toLocaleString()}):\n\n${paymentLinkUrl}\n\nThanks,\nARRA${companyName ? ` on behalf of ${companyName}` : ""}`,
@@ -399,10 +408,11 @@ export async function POST(req: Request) {
               "info"
             );
           }
+          }
 
           return {
             paymentLink: paymentLinkUrl,
-            message: `Payment link generated and sent to ${customerName}`,
+            message: `Payment link generated${process.env.RESEND_API_KEY ? ` and sent to ${customerName}` : ""}`,
           };
         },
       }),

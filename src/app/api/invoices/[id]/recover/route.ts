@@ -282,6 +282,16 @@ ${
           }
           }
         } else {
+          if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+            channelDelivered = false;
+            const evt6 = await logEvent(
+              id,
+              "ARRA",
+              "Email skipped: RESEND_API_KEY or RESEND_FROM_EMAIL not configured",
+              "info"
+            );
+            send({ type: "timeline", event: evt6 });
+          } else {
           try {
             const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -290,7 +300,7 @@ ${
             const body = lines.slice(1).join("\n").trim();
 
             await resend.emails.send({
-              from: process.env.RESEND_FROM_EMAIL!,
+              from: process.env.RESEND_FROM_EMAIL,
               to: customer.email,
               subject,
               text: body,
@@ -317,6 +327,7 @@ ${
               "info"
             );
             send({ type: "timeline", event: evt6 });
+          }
           }
         }
 
