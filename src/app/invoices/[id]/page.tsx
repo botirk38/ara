@@ -6,7 +6,6 @@ import {
   autonomyDecisions,
 } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { seed } from "@/db/seed";
 import { InvoiceDetailClient } from "./client";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +15,6 @@ export default async function InvoiceDetailPage({
 }: {
   params: { id: string };
 }) {
-  await seed();
-
   const invoiceRows = await db
     .select()
     .from(invoices)
