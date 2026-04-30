@@ -360,14 +360,14 @@ ${
           send({ type: "timeline", event: evt9 });
 
           // 9. Send confirmation email with payment link
-          if (channel === "phone" && channelDelivered) {
+          if (channel === "phone" && channelDelivered && process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL) {
             try {
               const resend = new Resend(process.env.RESEND_API_KEY);
 
               const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME;
 
               await resend.emails.send({
-                from: process.env.RESEND_FROM_EMAIL!,
+                from: process.env.RESEND_FROM_EMAIL,
                 to: customer.email,
                 subject: `Confirmation for invoice ${invoice.invoiceNumber}`,
                 text: `Hi ${customer.name},\n\nThanks for speaking with us today. As discussed, invoice ${invoice.invoiceNumber} for £${invoice.amount.toLocaleString()} is expected to be paid.\n\nYou can use this payment link:\n${paymentLinkUrl}\n\nThanks,\nARRA${companyName ? ` on behalf of ${companyName}` : ""}`,

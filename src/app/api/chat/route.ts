@@ -382,37 +382,39 @@ export async function POST(req: Request) {
           );
 
           const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME;
+          let emailSent = false;
 
           if (process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL) {
-          const resend = new Resend(process.env.RESEND_API_KEY);
+            const resend = new Resend(process.env.RESEND_API_KEY);
 
-          try {
-            await resend.emails.send({
-              from: process.env.RESEND_FROM_EMAIL,
-              to: customerEmail,
-              subject: `Payment link for invoice ${invoiceNumber}`,
-              text: `Hi ${customerName},\n\nHere is your payment link for invoice ${invoiceNumber} (£${amount.toLocaleString()}):\n\n${paymentLinkUrl}\n\nThanks,\nARRA${companyName ? ` on behalf of ${companyName}` : ""}`,
-            });
+            try {
+              await resend.emails.send({
+                from: process.env.RESEND_FROM_EMAIL,
+                to: customerEmail,
+                subject: `Payment link for invoice ${invoiceNumber}`,
+                text: `Hi ${customerName},\n\nHere is your payment link for invoice ${invoiceNumber} (£${amount.toLocaleString()}):\n\n${paymentLinkUrl}\n\nThanks,\nARRA${companyName ? ` on behalf of ${companyName}` : ""}`,
+              });
 
-            await logEvent(
-              invoiceId,
-              "ARRA",
-              `Confirmation email sent to ${customerEmail} with payment link`,
-              "email"
-            );
-          } catch {
-            await logEvent(
-              invoiceId,
-              "ARRA",
-              "Confirmation email queued (will retry)",
-              "info"
-            );
-          }
+              emailSent = true;
+              await logEvent(
+                invoiceId,
+                "ARRA",
+                `Confirmation email sent to ${customerEmail} with payment link`,
+                "email"
+              );
+            } catch {
+              await logEvent(
+                invoiceId,
+                "ARRA",
+                "Confirmation email queued (will retry)",
+                "info"
+              );
+            }
           }
 
           return {
             paymentLink: paymentLinkUrl,
-            message: `Payment link generated${process.env.RESEND_API_KEY ? ` and sent to ${customerName}` : ""}`,
+            message: `Payment link generated${emailSent ? ` and sent to ${customerName}` : ""}`,
           };
         },
       }),
