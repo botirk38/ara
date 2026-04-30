@@ -22,6 +22,10 @@ import {
 
 export const maxDuration = 120;
 
+const chatRequestSchema = z.object({
+  messages: z.array(z.record(z.string(), z.unknown())),
+});
+
 async function logEvent(
   invoiceId: string,
   actor: string,
@@ -41,7 +45,28 @@ async function logEvent(
 }
 
 export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json();
+  let json: unknown;
+  try {
+    json = await req.json();
+  } catch {
+    return Response.json(
+      { error: "Invalid JSON body" },
+      { status: 400 }
+    );
+  }
+
+  const parsed = chatRequestSchema.safeParse(json);
+  if (!parsed.success) {
+    return Response.json(
+      {
+        error: "Invalid request body",
+        details: parsed.error.flatten().fieldErrors,
+      },
+      { status: 400 }
+    );
+  }
+
+  const messages = parsed.data.messages as unknown as UIMessage[];
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
