@@ -11,7 +11,7 @@
     "db:push": "drizzle-kit push",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
-    "db:setup": "bun run db:push"
+    "db:setup": "bun run db:push && bun run db:seed"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.54",

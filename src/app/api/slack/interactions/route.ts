@@ -55,7 +55,12 @@ export async function POST(req: Request) {
     return Response.json({ error: "Missing payload" }, { status: 400 });
   }
 
-  const payload = JSON.parse(payloadStr);
+  let payload;
+  try {
+    payload = JSON.parse(payloadStr);
+  } catch {
+    return Response.json({ error: "Invalid payload JSON" }, { status: 400 });
+  }
 
   if (payload.type !== "block_actions") {
     return Response.json({ ok: true });
@@ -69,7 +74,13 @@ export async function POST(req: Request) {
       continue;
     }
 
-    const { approvalId } = JSON.parse(action.value);
+    let approvalId: string;
+    try {
+      approvalId = JSON.parse(action.value).approvalId;
+    } catch {
+      continue;
+    }
+    if (!approvalId) continue;
     const decision =
       action.action_id === "arra_approve" ? "approved" : "denied";
     const decidedBy = payload.user?.name || payload.user?.username || "unknown";

@@ -7,7 +7,6 @@ import {
   customers,
   recoveryActions,
   autonomyDecisions,
-  timelineEvents,
   paymentLinks,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -19,29 +18,21 @@ import {
   createApprovalAndNotify,
   checkApprovalDecision,
 } from "@/lib/slack";
+import { logEvent } from "@/lib/timeline";
 
 export const maxDuration = 120;
 
-async function logEvent(
-  invoiceId: string,
-  actor: string,
-  message: string,
-  eventType: string
-) {
-  const event = {
-    id: uuid(),
-    invoiceId,
-    actor,
-    message,
-    eventType,
-    createdAt: new Date().toISOString(),
-  };
-  await db.insert(timelineEvents).values(event);
-  return event;
-}
-
 export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json();
+  let body: { messages: UIMessage[] };
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json(
+      { error: "Invalid JSON body" },
+      { status: 400 }
+    );
+  }
+  const { messages } = body;
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
