@@ -1,4 +1,11 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
+
+const emailRequestSchema = z.object({
+  to: z.string().email(),
+  subject: z.string().min(1),
+  body: z.string().min(1),
+});
 
 export async function POST(req: NextRequest) {
   if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
@@ -12,7 +19,29 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { to, subject, body } = await req.json();
+  let json: unknown;
+  try {
+    json = await req.json();
+  } catch {
+    return Response.json(
+      { success: false, error: "Invalid JSON body" },
+      { status: 400 }
+    );
+  }
+
+  const parsed = emailRequestSchema.safeParse(json);
+  if (!parsed.success) {
+    return Response.json(
+      {
+        success: false,
+        error: "Invalid request body",
+        details: parsed.error.flatten().fieldErrors,
+      },
+      { status: 400 }
+    );
+  }
+
+  const { to, subject, body } = parsed.data;
 
   try {
     const resendModule = await import("resend");
