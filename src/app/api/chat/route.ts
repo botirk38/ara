@@ -19,6 +19,7 @@ import {
   checkApprovalDecision,
 } from "@/lib/slack";
 import { logEvent } from "@/lib/timeline";
+import { getBaseUrl } from "@/lib/env";
 
 export const maxDuration = 120;
 
@@ -216,8 +217,7 @@ export async function POST(req: Request) {
                 process.env.TWILIO_AUTH_TOKEN!
               );
 
-              const baseUrl =
-                process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+              const baseUrl = getBaseUrl();
               await client.calls.create({
                 to: phone,
                 from: process.env.TWILIO_PHONE_NUMBER!,
