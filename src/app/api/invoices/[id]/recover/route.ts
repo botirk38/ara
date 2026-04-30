@@ -252,6 +252,7 @@ ${
         });
 
         // 7. Execute action (mock for demo — real Twilio/Resend if keys present)
+        let channelDelivered = true;
         if (channel === "phone") {
           if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
             const evt6 = await logEvent(
@@ -331,6 +332,7 @@ ${
             send({ type: "timeline", event: evt8 });
           }
         } else {
+          let emailSent = false;
           if (process.env.RESEND_API_KEY) {
             try {
               const resendModule = await import("resend");
@@ -349,6 +351,7 @@ ${
                 text: body,
               });
 
+              emailSent = true;
               await db
                 .update(recoveryActions)
                 .set({ status: "sent" })
@@ -371,6 +374,7 @@ ${
               send({ type: "timeline", event: evt6 });
             }
           } else {
+            emailSent = true;
             await db
               .update(recoveryActions)
               .set({ status: "sent" })
@@ -384,6 +388,7 @@ ${
             );
             send({ type: "timeline", event: evt6 });
           }
+          channelDelivered = emailSent;
         }
 
         // 8. Create payment link
@@ -445,8 +450,11 @@ ${
         }
 
         // 10. Update invoice status
-        const newStatus =
-          channel === "phone" ? "promise_to_pay" : "sent";
+        const newStatus = !channelDelivered
+          ? "recovering"
+          : channel === "phone"
+          ? "promise_to_pay"
+          : "sent";
         await db
           .update(invoices)
           .set({ status: newStatus, updatedAt: new Date().toISOString() })

@@ -26,6 +26,7 @@ function StatusBadge({ status }: { status: string }) {
     recovering: "bg-blue-50 text-blue-700 border-blue-200",
     promise_to_pay: "bg-green-50 text-green-700 border-green-200",
     paid: "bg-green-100 text-green-800 border-green-300",
+    sent: "bg-green-50 text-green-700 border-green-200",
     disputed: "bg-gray-50 text-gray-700 border-gray-200",
     human_review: "bg-amber-50 text-amber-700 border-amber-200",
   };
@@ -35,6 +36,7 @@ function StatusBadge({ status }: { status: string }) {
     recovering: "Recovering",
     promise_to_pay: "Promise to Pay",
     paid: "Paid",
+    sent: "Sent",
     disputed: "Disputed",
     human_review: "Human Review",
   };
