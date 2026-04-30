@@ -208,11 +208,16 @@ export async function POST(req: Request) {
           });
 
           const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-          if (!baseUrl) {
+          if (
+            !baseUrl ||
+            !process.env.TWILIO_ACCOUNT_SID ||
+            !process.env.TWILIO_AUTH_TOKEN ||
+            !process.env.TWILIO_PHONE_NUMBER
+          ) {
             return {
               status: "failed",
               actionId,
-              error: "NEXT_PUBLIC_BASE_URL is not configured",
+              error: "Twilio credentials or NEXT_PUBLIC_BASE_URL not configured",
             };
           }
 
@@ -224,7 +229,7 @@ export async function POST(req: Request) {
 
             await client.calls.create({
               to: phone,
-              from: process.env.TWILIO_PHONE_NUMBER!,
+              from: process.env.TWILIO_PHONE_NUMBER,
               url: `${baseUrl}/api/twilio/voice?invoiceId=${invoiceId}&actionId=${actionId}`,
             });
 
