@@ -238,8 +238,7 @@ ${
           if (
             process.env.TWILIO_ACCOUNT_SID &&
             process.env.TWILIO_AUTH_TOKEN &&
-            process.env.TWILIO_PHONE_NUMBER &&
-            process.env.NEXT_PUBLIC_BASE_URL
+            process.env.TWILIO_PHONE_NUMBER
           ) {
             const evt6 = await logEvent(
               id,
@@ -259,7 +258,7 @@ ${
               await client.calls.create({
                 to: customer.phone,
                 from: process.env.TWILIO_PHONE_NUMBER,
-                url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/twilio/voice?invoiceId=${id}&actionId=${actionId}`,
+                url: `${baseUrl}/api/twilio/voice?invoiceId=${id}&actionId=${actionId}`,
               });
 
               await db
