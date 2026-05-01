@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Enrichment failed";
 
-    if (message.includes("not found")) {
+    if (message.includes("not found") || message.includes("No Specter enrichment data found")) {
       return Response.json({ error: message }, { status: 404 });
     }
     if (message.includes("is required")) {
