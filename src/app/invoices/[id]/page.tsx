@@ -8,6 +8,7 @@ import {
 import { eq, desc } from "drizzle-orm";
 import { seed } from "@/db/seed";
 import { InvoiceDetailClient } from "./client";
+import type { AutonomyGateResult } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -51,19 +52,29 @@ export default async function InvoiceDetailPage({
     .orderBy(desc(autonomyDecisions.createdAt));
   const latestGate = gateRows[0];
 
-  const gateResult = latestGate
-    ? {
-        allowed: latestGate.allowed,
-        reasons: JSON.parse(latestGate.reasons) as string[],
-        checks: {
-          amountThresholdPassed: latestGate.amountThresholdPassed,
-          disputeCheckPassed: latestGate.disputeCheckPassed,
-          daysOverduePassed: latestGate.daysOverduePassed,
-          specterRiskPassed: latestGate.specterRiskPassed,
-          relationshipPassed: latestGate.relationshipPassed,
-        },
+  let gateResult: AutonomyGateResult | null = null;
+  if (latestGate) {
+    let reasons: string[] = [];
+    try {
+      const parsed: unknown = JSON.parse(latestGate.reasons);
+      if (Array.isArray(parsed)) {
+        reasons = parsed.filter((r): r is string => typeof r === "string");
       }
-    : null;
+    } catch {
+      // malformed JSON — default to empty reasons
+    }
+    gateResult = {
+      allowed: latestGate.allowed,
+      reasons,
+      checks: {
+        amountThresholdPassed: latestGate.amountThresholdPassed,
+        disputeCheckPassed: latestGate.disputeCheckPassed,
+        daysOverduePassed: latestGate.daysOverduePassed,
+        specterRiskPassed: latestGate.specterRiskPassed,
+        relationshipPassed: latestGate.relationshipPassed,
+      },
+    };
+  }
 
   return (
     <InvoiceDetailClient
