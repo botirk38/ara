@@ -15,7 +15,7 @@ function hasFormContentType(req: NextRequest): boolean {
 
 export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const invoiceId = searchParams.get("invoiceId") || "";
+  const invoiceId = searchParams.get("invoiceId");
 
   let speechResult: string | null = null;
 
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     speechResult = formData.get("SpeechResult") as string | null;
   }
 
-  if (speechResult) {
+  if (speechResult && invoiceId) {
     await db.insert(timelineEvents).values({
       id: uuid(),
       invoiceId,
