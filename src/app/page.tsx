@@ -14,11 +14,13 @@ export default async function HomePage() {
   const allCustomers = await db.select().from(customers);
   const customerMap = new Map(allCustomers.map((c) => [c.id, c]));
 
-  const invoicesWithCustomers: InvoiceWithCustomer[] = allInvoices.map(
-    (inv) => {
-      const customer = customerMap.get(inv.customerId)!;
-      return { ...inv, customer };
-    }
+  const invoicesWithCustomers = allInvoices.reduce<InvoiceWithCustomer[]>(
+    (acc, inv) => {
+      const customer = customerMap.get(inv.customerId);
+      if (customer) acc.push({ ...inv, customer });
+      return acc;
+    },
+    []
   );
 
   const stats: DashboardStats = {
