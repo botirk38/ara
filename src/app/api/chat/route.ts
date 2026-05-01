@@ -22,8 +22,24 @@ import { logEvent } from "@/lib/timeline";
 
 export const maxDuration = 120;
 
+const uiMessagePartSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("text"), text: z.string() }).passthrough(),
+  z.object({ type: z.literal("reasoning") }).passthrough(),
+  z.object({ type: z.literal("tool-invocation") }).passthrough(),
+  z.object({ type: z.literal("source-url") }).passthrough(),
+  z.object({ type: z.literal("source-document") }).passthrough(),
+  z.object({ type: z.literal("file") }).passthrough(),
+  z.object({ type: z.literal("step-start") }).passthrough(),
+]);
+
+const uiMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(["system", "user", "assistant"]),
+  parts: z.array(uiMessagePartSchema),
+}).passthrough();
+
 const chatRequestSchema = z.object({
-  messages: z.array(z.record(z.string(), z.unknown())),
+  messages: z.array(uiMessageSchema),
 });
 
 export async function POST(req: Request) {
@@ -48,7 +64,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const messages = parsed.data.messages as unknown as UIMessage[];
+  const messages = parsed.data.messages as UIMessage[];
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
