@@ -124,6 +124,10 @@ async function fetchFromSpecter(
 export async function enrichDebtor(
   customerId: string
 ): Promise<SpecterEnrichment> {
+  if (!process.env.SPECTER_API_KEY) {
+    throw new Error("SPECTER_API_KEY is required for Specter enrichment.");
+  }
+
   const customerRows = await db
     .select()
     .from(customers)
