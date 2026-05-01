@@ -21,23 +21,39 @@ export async function POST(
 ) {
   const { id } = params;
 
-  const invoiceRows = await db
-    .select()
-    .from(invoices)
-    .where(eq(invoices.id, id));
-  const invoice = invoiceRows[0];
-  if (!invoice) {
-    return Response.json({ error: "Invoice not found" }, { status: 404 });
-  }
+  try {
+    const invoiceRows = await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.id, id));
+    const invoice = invoiceRows[0];
+    if (!invoice) {
+      return Response.json({ error: "Invoice not found" }, { status: 404 });
+    }
 
-  const customerRows = await db
-    .select()
-    .from(customers)
-    .where(eq(customers.id, invoice.customerId));
-  const customer = customerRows[0];
-  if (!customer) {
-    return Response.json({ error: "Customer not found" }, { status: 404 });
+    const customerRows = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, invoice.customerId));
+    const customer = customerRows[0];
+    if (!customer) {
+      return Response.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    return buildRecoveryStream(id, invoice, customer);
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof Error ? err.message : "Database error" },
+      { status: 500 }
+    );
   }
+}
+
+function buildRecoveryStream(
+  id: string,
+  invoice: { id: string; invoiceNumber: string; amount: number; currency: string | null; dueDate: string; daysOverdue: number; status: string; customerId: string; createdAt: string; updatedAt: string },
+  customer: { id: string; name: string; email: string; phone: string; whatsapp: string | null; relationship: string; avgDaysLate: number | null; createdAt: string }
+) {
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
