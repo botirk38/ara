@@ -20,13 +20,13 @@ interface SlackApprovalNotification extends SlackNotification {
  * Send a one-way Slack notification when ARRA needs human attention.
  * Uses Incoming Webhooks — simplest integration.
  */
-export async function notifySlack(params: SlackNotification): Promise<void> {
+export async function notifySlack(params: SlackNotification): Promise<boolean> {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
   if (!webhookUrl) {
     console.log(
       "[Slack] No SLACK_WEBHOOK_URL configured — skipping notification"
     );
-    return;
+    return false;
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -92,12 +92,15 @@ export async function notifySlack(params: SlackNotification): Promise<void> {
       console.error(
         `[Slack] Webhook request failed: ${res.status} ${res.statusText}`
       );
+      return false;
     }
+    return true;
   } catch (err) {
     console.error(
       "[Slack] Webhook request error:",
       err instanceof Error ? err.message : err
     );
+    return false;
   }
 }
 
@@ -115,7 +118,10 @@ export async function notifySlackWithApproval(
     console.log(
       "[Slack] No SLACK_BOT_TOKEN or SLACK_CHANNEL_ID configured — falling back to webhook"
     );
-    await notifySlack(params);
+    const sent = await notifySlack(params);
+    if (!sent) {
+      throw new Error("Slack webhook fallback failed — no notification sent");
+    }
     return;
   }
 
