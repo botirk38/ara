@@ -22,8 +22,22 @@ import { logEvent } from "@/lib/timeline";
 
 export const maxDuration = 120;
 
+const uiMessageSchema: z.ZodType<UIMessage> = z.custom<UIMessage>(
+  (val): val is UIMessage => {
+    if (typeof val !== "object" || val === null) return false;
+    const msg = val as Record<string, unknown>;
+    return (
+      typeof msg.id === "string" &&
+      typeof msg.role === "string" &&
+      ["system", "user", "assistant"].includes(msg.role) &&
+      Array.isArray(msg.parts)
+    );
+  },
+  { message: "Invalid UIMessage format: requires id, role, and parts" }
+);
+
 const chatRequestSchema = z.object({
-  messages: z.array(z.record(z.string(), z.unknown())),
+  messages: z.array(uiMessageSchema),
 });
 
 export async function POST(req: Request) {
@@ -48,7 +62,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const messages = parsed.data.messages as unknown as UIMessage[];
+  const { messages } = parsed.data;
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
