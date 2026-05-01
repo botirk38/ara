@@ -22,9 +22,27 @@ import { logEvent } from "@/lib/timeline";
 
 export const maxDuration = 120;
 
+const uiMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(["user", "assistant", "system"]),
+  parts: z
+    .array(z.record(z.string(), z.unknown()))
+    .optional(),
+  content: z.string().optional(),
+}).passthrough();
+
 const chatRequestSchema = z.object({
-  messages: z.array(z.record(z.string(), z.unknown())),
+  messages: z.array(uiMessageSchema),
 });
+
+function normalizeMessages(
+  raw: z.infer<typeof chatRequestSchema>["messages"]
+): UIMessage[] {
+  return raw.map((msg) => ({
+    ...msg,
+    parts: msg.parts ?? (msg.content ? [{ type: "text" as const, text: msg.content }] : []),
+  })) as unknown as UIMessage[];
+}
 
 export async function POST(req: Request) {
   let json: unknown;
@@ -48,7 +66,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const messages = parsed.data.messages as unknown as UIMessage[];
+  const messages = normalizeMessages(parsed.data.messages);
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
