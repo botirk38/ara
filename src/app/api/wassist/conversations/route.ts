@@ -8,8 +8,8 @@ export async function GET() {
   const apiKey = process.env.WASSIST_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "WASSIST_API_KEY is not configured" },
-      { status: 500 }
+      { error: "WhatsApp integration is not configured" },
+      { status: 503 }
     );
   }
 
