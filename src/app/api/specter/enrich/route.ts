@@ -28,6 +28,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (!process.env.SPECTER_API_KEY) {
+    return Response.json(
+      { error: "Specter enrichment service is not configured" },
+      { status: 503 }
+    );
+  }
+
   try {
     const result = await enrichDebtor(parsed.data.customerId);
     return Response.json(result);
@@ -36,12 +43,6 @@ export async function POST(req: NextRequest) {
 
     if (message.includes("not found") || message.includes("No Specter enrichment data found")) {
       return Response.json({ error: message }, { status: 404 });
-    }
-    if (message.includes("is required")) {
-      return Response.json(
-        { error: "Specter enrichment service is not configured" },
-        { status: 503 }
-      );
     }
     return Response.json({ error: message }, { status: 502 });
   }
