@@ -21,7 +21,8 @@ export async function POST(req: NextRequest) {
 
   if (hasFormContentType(req)) {
     const formData = await req.formData();
-    speechResult = formData.get("SpeechResult") as string | null;
+    const raw = formData.get("SpeechResult");
+    speechResult = typeof raw === "string" ? raw : null;
   }
 
   if (speechResult) {
