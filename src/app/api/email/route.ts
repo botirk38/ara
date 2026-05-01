@@ -12,8 +12,7 @@ export async function POST(req: NextRequest) {
     return Response.json(
       {
         success: false,
-        error:
-          "RESEND_API_KEY and RESEND_FROM_EMAIL are required for email delivery.",
+        error: "Email delivery is not configured",
       },
       { status: 500 }
     );
@@ -55,12 +54,9 @@ export async function POST(req: NextRequest) {
     });
 
     return Response.json({ success: true, result });
-  } catch (err) {
+  } catch {
     return Response.json(
-      {
-        success: false,
-        error: err instanceof Error ? err.message : "Send failed",
-      },
+      { success: false, error: "Failed to send email" },
       { status: 500 }
     );
   }

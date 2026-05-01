@@ -31,12 +31,10 @@ export async function POST(req: NextRequest) {
   try {
     const result = await enrichDebtor(parsed.data.customerId);
     return Response.json(result);
-  } catch (err) {
+  } catch {
     return Response.json(
-      {
-        error: err instanceof Error ? err.message : "Enrichment failed",
-      },
-      { status: 404 }
+      { error: "Enrichment failed" },
+      { status: 500 }
     );
   }
 }

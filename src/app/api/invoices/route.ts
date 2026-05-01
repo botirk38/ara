@@ -15,11 +15,9 @@ export async function GET() {
     }));
 
     return Response.json(result);
-  } catch (err) {
+  } catch {
     return Response.json(
-      {
-        error: err instanceof Error ? err.message : "Failed to fetch invoices",
-      },
+      { error: "Failed to fetch invoices" },
       { status: 500 }
     );
   }
