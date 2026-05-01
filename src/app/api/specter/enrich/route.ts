@@ -32,11 +32,15 @@ export async function POST(req: NextRequest) {
     const result = await enrichDebtor(parsed.data.customerId);
     return Response.json(result);
   } catch (err) {
-    return Response.json(
-      {
-        error: err instanceof Error ? err.message : "Enrichment failed",
-      },
-      { status: 404 }
-    );
+    const message =
+      err instanceof Error ? err.message : "Enrichment failed";
+
+    const isNotFound =
+      message.includes("not found") || message.includes("No Specter enrichment");
+    const isMissingConfig = message.includes("SPECTER_API_KEY is required");
+
+    const status = isMissingConfig ? 503 : isNotFound ? 404 : 502;
+
+    return Response.json({ error: message }, { status });
   }
 }
