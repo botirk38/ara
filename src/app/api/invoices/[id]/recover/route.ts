@@ -15,11 +15,17 @@ import { openai } from "@ai-sdk/openai";
 import { SYSTEM_PROMPT } from "@/lib/agent/system-prompt";
 import { logEvent } from "@/lib/timeline";
 
+const SAFE_ID = /^[a-zA-Z0-9_-]+$/;
+
 export async function POST(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
+
+  if (!SAFE_ID.test(id)) {
+    return Response.json({ error: "Invalid invoice ID format" }, { status: 400 });
+  }
 
   const invoiceRows = await db
     .select()

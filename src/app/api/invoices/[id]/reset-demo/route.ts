@@ -10,11 +10,17 @@ import {
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 
+const SAFE_ID = /^[a-zA-Z0-9_-]+$/;
+
 export async function POST(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
+
+  if (!SAFE_ID.test(id)) {
+    return Response.json({ error: "Invalid invoice ID format" }, { status: 400 });
+  }
 
   const invoiceRows = await db
     .select()

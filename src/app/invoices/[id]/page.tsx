@@ -6,17 +6,24 @@ import {
   autonomyDecisions,
 } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { seed } from "@/db/seed";
 import { InvoiceDetailClient } from "./client";
 
 export const dynamic = "force-dynamic";
+
+const SAFE_ID = /^[a-zA-Z0-9_-]+$/;
 
 export default async function InvoiceDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  await seed();
+  if (!SAFE_ID.test(params.id)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Invalid invoice ID</p>
+      </div>
+    );
+  }
 
   const invoiceRows = await db
     .select()
