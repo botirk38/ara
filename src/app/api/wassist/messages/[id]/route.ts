@@ -14,7 +14,7 @@ export async function GET(
   if (!apiKey) {
     return NextResponse.json(
       { error: "WASSIST_API_KEY is not configured" },
-      { status: 500 }
+      { status: 503 }
     );
   }
 
