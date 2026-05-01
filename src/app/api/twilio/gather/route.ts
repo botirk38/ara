@@ -15,7 +15,17 @@ function hasFormContentType(req: NextRequest): boolean {
 
 export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const invoiceId = searchParams.get("invoiceId") || "";
+  const invoiceId = searchParams.get("invoiceId");
+
+  if (!invoiceId) {
+    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="alice" language="en-GB">Thank you. We have noted your response and will send a confirmation email shortly.</Say>
+</Response>`;
+    return new Response(twiml, {
+      headers: { "Content-Type": "application/xml" },
+    });
+  }
 
   let speechResult: string | null = null;
 
