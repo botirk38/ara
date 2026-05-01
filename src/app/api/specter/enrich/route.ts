@@ -32,11 +32,17 @@ export async function POST(req: NextRequest) {
     const result = await enrichDebtor(parsed.data.customerId);
     return Response.json(result);
   } catch (err) {
-    return Response.json(
-      {
-        error: err instanceof Error ? err.message : "Enrichment failed",
-      },
-      { status: 404 }
-    );
+    const message = err instanceof Error ? err.message : "Enrichment failed";
+
+    if (message.includes("not found")) {
+      return Response.json({ error: message }, { status: 404 });
+    }
+    if (message.includes("is required")) {
+      return Response.json(
+        { error: "Specter enrichment service is not configured" },
+        { status: 503 }
+      );
+    }
+    return Response.json({ error: message }, { status: 502 });
   }
 }
