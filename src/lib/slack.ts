@@ -1,3 +1,4 @@
+import { WebClient } from "@slack/web-api";
 import { db } from "@/db";
 import { pendingApprovals } from "@/db/schema";
 import { v4 as uuid } from "uuid";
@@ -106,7 +107,6 @@ export async function notifySlackWithApproval(
     return;
   }
 
-  const { WebClient } = await import("@slack/web-api");
   const slack = new WebClient(token);
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
