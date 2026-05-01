@@ -6,7 +6,6 @@ import {
   autonomyDecisions,
 } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { seed } from "@/db/seed";
 import { InvoiceDetailClient } from "./client";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +15,6 @@ export default async function InvoiceDetailPage({
 }: {
   params: { id: string };
 }) {
-  await seed();
-
   const invoiceRows = await db
     .select()
     .from(invoices)
@@ -36,7 +33,14 @@ export default async function InvoiceDetailPage({
     .select()
     .from(customers)
     .where(eq(customers.id, invoice.customerId));
-  const customer = customerRows[0]!;
+  const customer = customerRows[0];
+  if (!customer) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Customer not found</p>
+      </div>
+    );
+  }
 
   const events = await db
     .select()
