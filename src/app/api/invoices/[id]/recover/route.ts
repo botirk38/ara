@@ -14,6 +14,7 @@ import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { SYSTEM_PROMPT } from "@/lib/agent/system-prompt";
 import { logEvent } from "@/lib/timeline";
+import { getBaseUrl } from "@/lib/url";
 
 export async function POST(
   _req: Request,
@@ -365,8 +366,7 @@ ${
         }
 
         // 8. Create payment link
-        const baseUrl =
-          process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+        const baseUrl = getBaseUrl();
         const paymentLinkUrl = `${baseUrl}/pay/${invoice.invoiceNumber}`;
         await db.insert(paymentLinks).values({
           id: uuid(),
