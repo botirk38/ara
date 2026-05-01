@@ -4,6 +4,13 @@ import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import type { SpecterEnrichment } from "./types";
 
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotFoundError";
+  }
+}
+
 const SPECTER_API_BASE = "https://app.tryspecter.com/api/v1";
 
 interface SpecterCompany {
@@ -130,7 +137,7 @@ export async function enrichDebtor(
     .where(eq(customers.id, customerId));
   const customer = customerRows[0];
   if (!customer) {
-    throw new Error(`Customer ${customerId} not found.`);
+    throw new NotFoundError(`Customer ${customerId} not found.`);
   }
 
   const domain = domainFromEmail(customer.email);
@@ -184,7 +191,7 @@ export async function enrichDebtor(
 
   const cached = rows[0];
   if (!cached) {
-    throw new Error(
+    throw new NotFoundError(
       `No Specter enrichment data found for customer ${customerId}. Run enrichment before recovery.`
     );
   }

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { enrichDebtor } from "@/lib/specter";
+import { enrichDebtor, NotFoundError } from "@/lib/specter";
 
 const enrichRequestSchema = z.object({
   customerId: z.string().min(1),
@@ -32,11 +32,12 @@ export async function POST(req: NextRequest) {
     const result = await enrichDebtor(parsed.data.customerId);
     return Response.json(result);
   } catch (err) {
+    const status = err instanceof NotFoundError ? 404 : 500;
     return Response.json(
       {
         error: err instanceof Error ? err.message : "Enrichment failed",
       },
-      { status: 500 }
+      { status }
     );
   }
 }
