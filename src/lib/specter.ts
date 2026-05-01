@@ -21,7 +21,6 @@ interface SpecterCompany {
   growth_score?: number;
   news?: Array<{ title?: string; sentiment?: string }>;
   revenue_range?: string;
-  [key: string]: unknown;
 }
 
 async function specterFetch<T>(
