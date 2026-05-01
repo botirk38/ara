@@ -20,17 +20,17 @@ export async function GET() {
 
     if (!res.ok) {
       return NextResponse.json(
-        { error: `Wassist API error: ${res.status}` },
-        { status: res.status }
+        { error: "Failed to fetch conversations from messaging provider" },
+        { status: 502 }
       );
     }
 
     const data = await res.json();
     return NextResponse.json(data);
-  } catch (err) {
+  } catch {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to fetch conversations" },
-      { status: 500 }
+      { error: "Failed to fetch conversations" },
+      { status: 502 }
     );
   }
 }
