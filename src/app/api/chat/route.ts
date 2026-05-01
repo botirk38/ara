@@ -24,7 +24,12 @@ export const maxDuration = 120;
 
 const uiMessagePartSchema = z.union([
   z.object({ type: z.literal("text"), text: z.string() }).passthrough(),
-  z.object({ type: z.string() }).passthrough(),
+  z
+    .object({ type: z.string() })
+    .passthrough()
+    .refine((obj) => obj.type !== "text", {
+      message: "text parts require a text field",
+    }),
 ]);
 
 const uiMessageSchema = z.object({
