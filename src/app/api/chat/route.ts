@@ -38,7 +38,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const body = json as Record<string, unknown>;
+  const body =
+    json != null && typeof json === "object" && !Array.isArray(json)
+      ? (json as Record<string, unknown>)
+      : {};
   const validated = await safeValidateUIMessages({
     messages: body.messages,
   });
