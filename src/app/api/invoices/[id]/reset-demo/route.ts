@@ -26,43 +26,47 @@ export async function POST(
     return Response.json({ error: "Invoice not found" }, { status: 404 });
   }
 
-  await db
-    .delete(recoveryActions)
-    .where(eq(recoveryActions.invoiceId, id));
-  await db
-    .delete(autonomyDecisions)
-    .where(eq(autonomyDecisions.invoiceId, id));
-  await db
-    .delete(timelineEvents)
-    .where(eq(timelineEvents.invoiceId, id));
-  await db
-    .delete(paymentLinks)
-    .where(eq(paymentLinks.invoiceId, id));
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(recoveryActions)
+      .where(eq(recoveryActions.invoiceId, id));
+    await tx
+      .delete(autonomyDecisions)
+      .where(eq(autonomyDecisions.invoiceId, id));
+    await tx
+      .delete(timelineEvents)
+      .where(eq(timelineEvents.invoiceId, id));
+    await tx
+      .delete(paymentLinks)
+      .where(eq(paymentLinks.invoiceId, id));
 
-  try {
-    await db
-      .delete(pendingApprovals)
-      .where(eq(pendingApprovals.invoiceId, id));
-  } catch (err: unknown) {
-    const isUndefinedTable =
-      err instanceof Error && "code" in err && (err as { code: string }).code === "42P01";
-    if (!isUndefinedTable) {
-      console.error("[reset-demo] Failed to delete pending approvals:", err);
+    try {
+      await tx
+        .delete(pendingApprovals)
+        .where(eq(pendingApprovals.invoiceId, id));
+    } catch (err: unknown) {
+      const isUndefinedTable =
+        err instanceof Error &&
+        "code" in err &&
+        (err as { code: string }).code === "42P01";
+      if (!isUndefinedTable) {
+        throw err;
+      }
     }
-  }
 
-  await db
-    .update(invoices)
-    .set({ status: "overdue", updatedAt: new Date().toISOString() })
-    .where(eq(invoices.id, id));
+    await tx
+      .update(invoices)
+      .set({ status: "overdue", updatedAt: new Date().toISOString() })
+      .where(eq(invoices.id, id));
 
-  await db.insert(timelineEvents).values({
-    id: uuid(),
-    invoiceId: id,
-    actor: "System",
-    message: `Invoice ${invoice.invoiceNumber} reset to demo state`,
-    eventType: "info",
-    createdAt: new Date().toISOString(),
+    await tx.insert(timelineEvents).values({
+      id: uuid(),
+      invoiceId: id,
+      actor: "System",
+      message: `Invoice ${invoice.invoiceNumber} reset to demo state`,
+      eventType: "info",
+      createdAt: new Date().toISOString(),
+    });
   });
 
   return Response.json({ success: true, invoiceId: id });
