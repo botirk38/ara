@@ -101,22 +101,29 @@ export async function POST(req: Request) {
     // Update the Slack message to show the decision
     const responseUrl = typeof payload.response_url === "string" ? payload.response_url : null;
     if (responseUrl) {
-      await fetch(responseUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          replace_original: true,
-          blocks: [
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: `*ARRA Approval ${decision === "approved" ? "Approved" : "Denied"}* by ${decidedBy}`,
+      try {
+        await fetch(responseUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            replace_original: true,
+            blocks: [
+              {
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: `*ARRA Approval ${decision === "approved" ? "Approved" : "Denied"}* by ${decidedBy}`,
+                },
               },
-            },
-          ],
-        }),
-      });
+            ],
+          }),
+        });
+      } catch (err) {
+        console.error(
+          "[Slack] Failed to update message via response_url:",
+          err instanceof Error ? err.message : err
+        );
+      }
     }
   }
 

@@ -31,61 +31,74 @@ export async function notifySlack(params: SlackNotification): Promise<void> {
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  await fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      blocks: [
-        {
-          type: "header",
-          text: {
-            type: "plain_text",
-            text: "ARRA — Human Review Required",
-            emoji: true,
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        blocks: [
+          {
+            type: "header",
+            text: {
+              type: "plain_text",
+              text: "ARRA — Human Review Required",
+              emoji: true,
+            },
           },
-        },
-        {
-          type: "section",
-          fields: [
-            {
-              type: "mrkdwn",
-              text: `*Invoice:*\n${params.invoiceNumber}`,
-            },
-            {
-              type: "mrkdwn",
-              text: `*Customer:*\n${params.customerName}`,
-            },
-            {
-              type: "mrkdwn",
-              text: `*Amount:*\n£${params.amount.toLocaleString()}`,
-            },
-            {
-              type: "mrkdwn",
-              text: `*Reason:*\n${params.reason}`,
-            },
-          ],
-        },
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: `*Context:*\n${params.context}`,
+          {
+            type: "section",
+            fields: [
+              {
+                type: "mrkdwn",
+                text: `*Invoice:*\n${params.invoiceNumber}`,
+              },
+              {
+                type: "mrkdwn",
+                text: `*Customer:*\n${params.customerName}`,
+              },
+              {
+                type: "mrkdwn",
+                text: `*Amount:*\n£${params.amount.toLocaleString()}`,
+              },
+              {
+                type: "mrkdwn",
+                text: `*Reason:*\n${params.reason}`,
+              },
+            ],
           },
-        },
-        {
-          type: "actions",
-          elements: [
-            {
-              type: "button",
-              text: { type: "plain_text", text: "Review in ARRA" },
-              url: `${baseUrl}/invoices/${params.invoiceId}`,
-              style: "primary",
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `*Context:*\n${params.context}`,
             },
-          ],
-        },
-      ],
-    }),
-  });
+          },
+          {
+            type: "actions",
+            elements: [
+              {
+                type: "button",
+                text: { type: "plain_text", text: "Review in ARRA" },
+                url: `${baseUrl}/invoices/${params.invoiceId}`,
+                style: "primary",
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      console.error(
+        `[Slack] Webhook request failed: ${res.status} ${res.statusText}`
+      );
+    }
+  } catch (err) {
+    console.error(
+      "[Slack] Webhook request error:",
+      err instanceof Error ? err.message : err
+    );
+  }
 }
 
 /**
