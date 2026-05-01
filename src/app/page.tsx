@@ -2,14 +2,11 @@ import { db } from "@/db";
 import { invoices, customers } from "@/db/schema";
 import { StatsHeader } from "@/components/stats-header";
 import { InvoiceTable } from "@/components/invoice-table";
-import { seed } from "@/db/seed";
 import type { InvoiceWithCustomer, DashboardStats } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  await seed();
-
   const allInvoices = await db.select().from(invoices);
   const allCustomers = await db.select().from(customers);
   const customerMap = new Map(allCustomers.map((c) => [c.id, c]));
