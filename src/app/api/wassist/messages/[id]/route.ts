@@ -14,7 +14,7 @@ export async function GET(
   if (!apiKey) {
     return NextResponse.json(
       { error: "WASSIST_API_KEY is not configured" },
-      { status: 500 }
+      { status: 503 }
     );
   }
 
@@ -45,7 +45,7 @@ export async function GET(
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch messages" },
-      { status: 500 }
+      { status: 502 }
     );
   }
 }
