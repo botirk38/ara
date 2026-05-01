@@ -22,14 +22,13 @@ import { logEvent } from "@/lib/timeline";
 
 export const maxDuration = 120;
 
-const uiMessageSchema = z.object({
-  id: z.string(),
-  role: z.enum(["user", "assistant", "system"]),
-  parts: z.array(z.record(z.string(), z.unknown())).optional(),
-}).passthrough();
-
 const chatRequestSchema = z.object({
-  messages: z.array(uiMessageSchema),
+  messages: z.array(
+    z.object({
+      id: z.string(),
+      role: z.enum(["user", "assistant", "system"]),
+    }).passthrough()
+  ),
 });
 
 export async function POST(req: Request) {
@@ -54,7 +53,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const messages = parsed.data.messages as UIMessage[];
+  const messages = parsed.data.messages as unknown as UIMessage[];
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
