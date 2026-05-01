@@ -124,10 +124,6 @@ async function fetchFromSpecter(
 export async function enrichDebtor(
   customerId: string
 ): Promise<SpecterEnrichment> {
-  if (!process.env.SPECTER_API_KEY) {
-    throw new Error("SPECTER_API_KEY is required for Specter enrichment.");
-  }
-
   const customerRows = await db
     .select()
     .from(customers)
@@ -188,6 +184,11 @@ export async function enrichDebtor(
 
   const cached = rows[0];
   if (!cached) {
+    if (!process.env.SPECTER_API_KEY) {
+      throw new Error(
+        "SPECTER_API_KEY is required for Specter enrichment."
+      );
+    }
     throw new Error(
       `No Specter enrichment data found for customer ${customerId}. Run enrichment before recovery.`
     );
