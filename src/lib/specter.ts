@@ -189,12 +189,19 @@ export async function enrichDebtor(
     );
   }
 
+  const validRisk = ["low", "medium", "high"] as const;
+  const riskSignal: "low" | "medium" | "high" = validRisk.includes(
+    cached.riskSignal as "low" | "medium" | "high"
+  )
+    ? (cached.riskSignal as "low" | "medium" | "high")
+    : "medium";
+
   return {
-    riskSignal: cached.riskSignal as "low" | "medium" | "high",
-    summary: `${cached.companyName}: ${cached.riskSignal} risk`,
+    riskSignal,
+    summary: `${cached.companyName}: ${riskSignal} risk`,
     evidence: [cached.revenueSignal, cached.newsSignal].filter(
-      Boolean
-    ) as string[],
+      (s): s is string => typeof s === "string"
+    ),
     revenueSignal: cached.revenueSignal ?? undefined,
     newsSignal: cached.newsSignal ?? undefined,
   };

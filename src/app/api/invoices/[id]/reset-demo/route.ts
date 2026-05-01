@@ -45,7 +45,10 @@ export async function POST(
       .where(eq(pendingApprovals.invoiceId, id));
   } catch (err: unknown) {
     const isUndefinedTable =
-      err instanceof Error && "code" in err && (err as { code: string }).code === "42P01";
+      err instanceof Error &&
+      "code" in err &&
+      typeof (err as Record<string, unknown>).code === "string" &&
+      (err as Record<string, unknown>).code === "42P01";
     if (!isUndefinedTable) {
       console.error("[reset-demo] Failed to delete pending approvals:", err);
     }

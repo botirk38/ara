@@ -48,7 +48,12 @@ export async function POST(req: Request) {
     );
   }
 
-  const messages = parsed.data.messages as unknown as UIMessage[];
+  const messages: UIMessage[] = parsed.data.messages.map((msg) => ({
+    id: typeof msg.id === "string" ? msg.id : String(msg.id ?? ""),
+    role: typeof msg.role === "string" ? msg.role : "user",
+    content: typeof msg.content === "string" ? msg.content : String(msg.content ?? ""),
+    parts: Array.isArray(msg.parts) ? msg.parts : [],
+  })) as UIMessage[];
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
