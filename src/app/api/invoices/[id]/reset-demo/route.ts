@@ -10,6 +10,14 @@ import {
 import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 
+function hasPostgresCode(err: unknown, code: string): boolean {
+  if (!(err instanceof Error)) return false;
+  const withCode = err as Error & { code?: string; cause?: { code?: string } };
+  if (withCode.code === code) return true;
+  if (withCode.cause && withCode.cause.code === code) return true;
+  return false;
+}
+
 export async function POST(
   _req: Request,
   { params }: { params: { id: string } }
@@ -44,9 +52,7 @@ export async function POST(
       .delete(pendingApprovals)
       .where(eq(pendingApprovals.invoiceId, id));
   } catch (err: unknown) {
-    const isUndefinedTable =
-      err instanceof Error && "code" in err && (err as { code: string }).code === "42P01";
-    if (!isUndefinedTable) {
+    if (!hasPostgresCode(err, "42P01")) {
       console.error("[reset-demo] Failed to delete pending approvals:", err);
     }
   }
