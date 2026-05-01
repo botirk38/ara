@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
         error:
           "RESEND_API_KEY and RESEND_FROM_EMAIL are required for email delivery.",
       },
-      { status: 500 }
+      { status: 503 }
     );
   }
 
