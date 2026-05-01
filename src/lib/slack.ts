@@ -124,79 +124,86 @@ export async function notifySlackWithApproval(
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  await slack.chat.postMessage({
-    channel,
-    blocks: [
-      {
-        type: "header",
-        text: {
-          type: "plain_text",
-          text: "ARRA — Approval Required",
-          emoji: true,
+  try {
+    await slack.chat.postMessage({
+      channel,
+      blocks: [
+        {
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: "ARRA — Approval Required",
+            emoji: true,
+          },
         },
-      },
-      {
-        type: "section",
-        fields: [
-          {
-            type: "mrkdwn",
-            text: `*Invoice:*\n${params.invoiceNumber}`,
-          },
-          {
-            type: "mrkdwn",
-            text: `*Customer:*\n${params.customerName}`,
-          },
-          {
-            type: "mrkdwn",
-            text: `*Amount:*\n£${params.amount.toLocaleString()}`,
-          },
-          {
-            type: "mrkdwn",
-            text: `*Reason:*\n${params.reason}`,
-          },
-        ],
-      },
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `*Context:*\n${params.context}`,
+        {
+          type: "section",
+          fields: [
+            {
+              type: "mrkdwn",
+              text: `*Invoice:*\n${params.invoiceNumber}`,
+            },
+            {
+              type: "mrkdwn",
+              text: `*Customer:*\n${params.customerName}`,
+            },
+            {
+              type: "mrkdwn",
+              text: `*Amount:*\n£${params.amount.toLocaleString()}`,
+            },
+            {
+              type: "mrkdwn",
+              text: `*Reason:*\n${params.reason}`,
+            },
+          ],
         },
-      },
-      {
-        type: "actions",
-        block_id: `approval_${params.approvalId}`,
-        elements: [
-          {
-            type: "button",
-            text: { type: "plain_text", text: "Approve" },
-            style: "primary",
-            action_id: "arra_approve",
-            value: JSON.stringify({
-              approvalId: params.approvalId,
-              invoiceId: params.invoiceId,
-            }),
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `*Context:*\n${params.context}`,
           },
-          {
-            type: "button",
-            text: { type: "plain_text", text: "Deny" },
-            style: "danger",
-            action_id: "arra_deny",
-            value: JSON.stringify({
-              approvalId: params.approvalId,
-              invoiceId: params.invoiceId,
-            }),
-          },
-          {
-            type: "button",
-            text: { type: "plain_text", text: "Open in ARRA" },
-            action_id: "arra_open",
-            url: `${baseUrl}/invoices/${params.invoiceId}`,
-          },
-        ],
-      },
-    ],
-  });
+        },
+        {
+          type: "actions",
+          block_id: `approval_${params.approvalId}`,
+          elements: [
+            {
+              type: "button",
+              text: { type: "plain_text", text: "Approve" },
+              style: "primary",
+              action_id: "arra_approve",
+              value: JSON.stringify({
+                approvalId: params.approvalId,
+                invoiceId: params.invoiceId,
+              }),
+            },
+            {
+              type: "button",
+              text: { type: "plain_text", text: "Deny" },
+              style: "danger",
+              action_id: "arra_deny",
+              value: JSON.stringify({
+                approvalId: params.approvalId,
+                invoiceId: params.invoiceId,
+              }),
+            },
+            {
+              type: "button",
+              text: { type: "plain_text", text: "Open in ARRA" },
+              action_id: "arra_open",
+              url: `${baseUrl}/invoices/${params.invoiceId}`,
+            },
+          ],
+        },
+      ],
+    });
+  } catch (err) {
+    console.error(
+      "[Slack] postMessage error:",
+      err instanceof Error ? err.message : err
+    );
+  }
 }
 
 /**
