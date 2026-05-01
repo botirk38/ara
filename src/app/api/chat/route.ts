@@ -22,8 +22,18 @@ import { logEvent } from "@/lib/timeline";
 
 export const maxDuration = 120;
 
+const uiMessagePartSchema = z.object({
+  type: z.string(),
+}).passthrough();
+
+const uiMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(["system", "user", "assistant"]),
+  parts: z.array(uiMessagePartSchema),
+}).passthrough();
+
 const chatRequestSchema = z.object({
-  messages: z.array(z.record(z.string(), z.unknown())),
+  messages: z.array(uiMessageSchema),
 });
 
 export async function POST(req: Request) {
@@ -48,12 +58,25 @@ export async function POST(req: Request) {
     );
   }
 
-  const messages = parsed.data.messages as unknown as UIMessage[];
+  const messages = parsed.data.messages as UIMessage[];
+
+  let modelMessages;
+  try {
+    modelMessages = await convertToModelMessages(messages);
+  } catch (err) {
+    return Response.json(
+      {
+        error: "Invalid message format",
+        details: err instanceof Error ? err.message : "Failed to convert messages",
+      },
+      { status: 400 }
+    );
+  }
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
     system: SYSTEM_PROMPT,
-    messages: await convertToModelMessages(messages),
+    messages: modelMessages,
     tools: {
       loadInvoiceContext: tool({
         description:
