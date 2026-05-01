@@ -1,4 +1,9 @@
-import { streamText, tool, convertToModelMessages, type UIMessage } from "ai";
+import {
+  streamText,
+  tool,
+  convertToModelMessages,
+  safeValidateUIMessages,
+} from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { db } from "@/db";
@@ -22,10 +27,6 @@ import { logEvent } from "@/lib/timeline";
 
 export const maxDuration = 120;
 
-const chatRequestSchema = z.object({
-  messages: z.array(z.record(z.string(), z.unknown())),
-});
-
 export async function POST(req: Request) {
   let json: unknown;
   try {
@@ -37,18 +38,22 @@ export async function POST(req: Request) {
     );
   }
 
-  const parsed = chatRequestSchema.safeParse(json);
-  if (!parsed.success) {
+  const body = json as Record<string, unknown> | null;
+  const validated = await safeValidateUIMessages({
+    messages: body?.messages,
+  });
+
+  if (!validated.success) {
     return Response.json(
       {
         error: "Invalid request body",
-        details: parsed.error.flatten().fieldErrors,
+        details: validated.error.message,
       },
       { status: 400 }
     );
   }
 
-  const messages = parsed.data.messages as unknown as UIMessage[];
+  const messages = validated.data;
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
