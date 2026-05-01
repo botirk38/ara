@@ -16,3 +16,15 @@ export function getBaseUrl(): string {
     "NEXT_PUBLIC_BASE_URL is required. Set it in your environment variables."
   );
 }
+
+/**
+ * Non-throwing variant for notification contexts where a broken link
+ * is preferable to a failed notification (e.g. Slack messages).
+ */
+export function getBaseUrlOrFallback(): string {
+  try {
+    return getBaseUrl();
+  } catch {
+    return "http://localhost:3000";
+  }
+}

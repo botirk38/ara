@@ -58,6 +58,9 @@ export async function POST(
       }
 
       try {
+        // Validate base URL early — before any side effects
+        const baseUrl = getBaseUrl();
+
         // 1. Update status to recovering
         await db
           .update(invoices)
@@ -366,7 +369,6 @@ ${
         }
 
         // 8. Create payment link
-        const baseUrl = getBaseUrl();
         const paymentLinkUrl = `${baseUrl}/pay/${invoice.invoiceNumber}`;
         await db.insert(paymentLinks).values({
           id: uuid(),

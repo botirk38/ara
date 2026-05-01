@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { pendingApprovals } from "@/db/schema";
 import { v4 as uuid } from "uuid";
 import { eq } from "drizzle-orm";
-import { getBaseUrl } from "@/lib/env";
+import { getBaseUrlOrFallback } from "@/lib/env";
 
 interface SlackNotification {
   invoiceId: string;
@@ -30,7 +30,7 @@ export async function notifySlack(params: SlackNotification): Promise<void> {
     return;
   }
 
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrlOrFallback();
 
   await fetch(webhookUrl, {
     method: "POST",
@@ -110,7 +110,7 @@ export async function notifySlackWithApproval(
   const { WebClient } = await import("@slack/web-api");
   const slack = new WebClient(token);
 
-  const baseUrl = getBaseUrl();
+  const baseUrl = getBaseUrlOrFallback();
 
   await slack.chat.postMessage({
     channel,
