@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       {
         error: err instanceof Error ? err.message : "Enrichment failed",
       },
-      { status: 404 }
+      { status: 500 }
     );
   }
 }
