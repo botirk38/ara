@@ -1,16 +1,33 @@
 import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
-const databaseUrl =
-  process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+let _db: NeonHttpDatabase<typeof schema> | null = null;
 
-if (!databaseUrl) {
-  throw new Error(
-    "DATABASE_URL or DATABASE_URL_UNPOOLED must be set. See README for setup instructions."
-  );
+function getDb(): NeonHttpDatabase<typeof schema> {
+  if (_db) return _db;
+
+  const databaseUrl =
+    process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+
+  if (!databaseUrl) {
+    throw new Error(
+      "DATABASE_URL or DATABASE_URL_UNPOOLED must be set. See README for setup instructions."
+    );
+  }
+
+  const sql = neon(databaseUrl, { fetchOptions: { cache: "no-store" } });
+  _db = drizzle(sql, { schema });
+  return _db;
 }
 
-const sql = neon(databaseUrl, { fetchOptions: { cache: "no-store" } });
-
-export const db = drizzle(sql, { schema });
+export const db = new Proxy({} as NeonHttpDatabase<typeof schema>, {
+  get(_target, prop, receiver) {
+    const instance = getDb();
+    const value = Reflect.get(instance, prop, receiver);
+    if (typeof value === "function") {
+      return value.bind(instance);
+    }
+    return value;
+  },
+});
