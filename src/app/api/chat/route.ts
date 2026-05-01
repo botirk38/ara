@@ -205,22 +205,20 @@ export async function POST(req: Request) {
             createdAt: new Date().toISOString(),
           });
 
-          if (
-            process.env.TWILIO_ACCOUNT_SID &&
-            process.env.TWILIO_AUTH_TOKEN
-          ) {
+          const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+          const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+          const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
+
+          if (twilioSid && twilioToken && twilioPhone) {
             try {
               const twilioModule = await import("twilio");
-              const client = twilioModule.default(
-                process.env.TWILIO_ACCOUNT_SID!,
-                process.env.TWILIO_AUTH_TOKEN!
-              );
+              const client = twilioModule.default(twilioSid, twilioToken);
 
               const baseUrl =
                 process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
               await client.calls.create({
                 to: phone,
-                from: process.env.TWILIO_PHONE_NUMBER!,
+                from: twilioPhone,
                 url: `${baseUrl}/api/twilio/voice?invoiceId=${invoiceId}&actionId=${actionId}`,
               });
 

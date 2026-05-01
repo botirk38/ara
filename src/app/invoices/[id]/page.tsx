@@ -36,7 +36,15 @@ export default async function InvoiceDetailPage({
     .select()
     .from(customers)
     .where(eq(customers.id, invoice.customerId));
-  const customer = customerRows[0]!;
+  const customer = customerRows[0];
+
+  if (!customer) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Customer not found</p>
+      </div>
+    );
+  }
 
   const events = await db
     .select()
