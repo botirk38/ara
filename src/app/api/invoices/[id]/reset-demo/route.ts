@@ -26,6 +26,24 @@ export async function POST(
     return Response.json({ error: "Invoice not found" }, { status: 404 });
   }
 
+  // Delete pending approvals outside the transaction because the table
+  // may not exist yet (error 42P01). In PostgreSQL, a failed statement
+  // inside a transaction aborts the entire transaction, so this must
+  // run as a standalone query.
+  try {
+    await db
+      .delete(pendingApprovals)
+      .where(eq(pendingApprovals.invoiceId, id));
+  } catch (err: unknown) {
+    const isUndefinedTable =
+      err instanceof Error &&
+      "code" in err &&
+      (err as { code: string }).code === "42P01";
+    if (!isUndefinedTable) {
+      throw err;
+    }
+  }
+
   await db.transaction(async (tx) => {
     await tx
       .delete(recoveryActions)
@@ -39,20 +57,6 @@ export async function POST(
     await tx
       .delete(paymentLinks)
       .where(eq(paymentLinks.invoiceId, id));
-
-    try {
-      await tx
-        .delete(pendingApprovals)
-        .where(eq(pendingApprovals.invoiceId, id));
-    } catch (err: unknown) {
-      const isUndefinedTable =
-        err instanceof Error &&
-        "code" in err &&
-        (err as { code: string }).code === "42P01";
-      if (!isUndefinedTable) {
-        throw err;
-      }
-    }
 
     await tx
       .update(invoices)
