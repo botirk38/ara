@@ -44,9 +44,15 @@ export async function POST(
       .delete(pendingApprovals)
       .where(eq(pendingApprovals.invoiceId, id));
   } catch (err: unknown) {
-    const isUndefinedTable =
-      err instanceof Error && "code" in err && (err as { code: string }).code === "42P01";
-    if (!isUndefinedTable) {
+    const cause = err instanceof Error ? err.cause : undefined;
+    const code =
+      (cause instanceof Error && "code" in cause
+        ? (cause as { code: string }).code
+        : undefined) ??
+      (err instanceof Error && "code" in err
+        ? (err as { code: string }).code
+        : undefined);
+    if (code !== "42P01") {
       console.error("[reset-demo] Failed to delete pending approvals:", err);
     }
   }
