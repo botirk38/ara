@@ -12,10 +12,9 @@ export async function POST(req: NextRequest) {
     return Response.json(
       {
         success: false,
-        error:
-          "RESEND_API_KEY and RESEND_FROM_EMAIL are required for email delivery.",
+        error: "Email delivery service is not configured",
       },
-      { status: 500 }
+      { status: 503 }
     );
   }
 
