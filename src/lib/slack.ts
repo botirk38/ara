@@ -31,16 +31,107 @@ export async function notifySlack(params: SlackNotification): Promise<void> {
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  await fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        blocks: [
+          {
+            type: "header",
+            text: {
+              type: "plain_text",
+              text: "ARRA — Human Review Required",
+              emoji: true,
+            },
+          },
+          {
+            type: "section",
+            fields: [
+              {
+                type: "mrkdwn",
+                text: `*Invoice:*\n${params.invoiceNumber}`,
+              },
+              {
+                type: "mrkdwn",
+                text: `*Customer:*\n${params.customerName}`,
+              },
+              {
+                type: "mrkdwn",
+                text: `*Amount:*\n£${params.amount.toLocaleString()}`,
+              },
+              {
+                type: "mrkdwn",
+                text: `*Reason:*\n${params.reason}`,
+              },
+            ],
+          },
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `*Context:*\n${params.context}`,
+            },
+          },
+          {
+            type: "actions",
+            elements: [
+              {
+                type: "button",
+                text: { type: "plain_text", text: "Review in ARRA" },
+                url: `${baseUrl}/invoices/${params.invoiceId}`,
+                style: "primary",
+              },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      console.error(
+        `[Slack] Webhook returned ${res.status}: ${await res.text().catch(() => res.statusText)}`
+      );
+    }
+  } catch (err) {
+    console.error(
+      "[Slack] Webhook delivery failed:",
+      err instanceof Error ? err.message : err
+    );
+  }
+}
+
+/**
+ * Send an interactive Slack notification with Approve / Deny / Chat buttons.
+ * Uses Slack Web API (requires SLACK_BOT_TOKEN).
+ */
+export async function notifySlackWithApproval(
+  params: SlackApprovalNotification
+): Promise<void> {
+  const token = process.env.SLACK_BOT_TOKEN;
+  const channel = process.env.SLACK_CHANNEL_ID;
+
+  if (!token || !channel) {
+    console.log(
+      "[Slack] No SLACK_BOT_TOKEN or SLACK_CHANNEL_ID configured — falling back to webhook"
+    );
+    await notifySlack(params);
+    return;
+  }
+
+  const { WebClient } = await import("@slack/web-api");
+  const slack = new WebClient(token);
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+  try {
+    await slack.chat.postMessage({
+      channel,
       blocks: [
         {
           type: "header",
           text: {
             type: "plain_text",
-            text: "ARRA — Human Review Required",
+            text: "ARRA — Approval Required",
             emoji: true,
           },
         },
@@ -74,116 +165,44 @@ export async function notifySlack(params: SlackNotification): Promise<void> {
         },
         {
           type: "actions",
+          block_id: `approval_${params.approvalId}`,
           elements: [
             {
               type: "button",
-              text: { type: "plain_text", text: "Review in ARRA" },
-              url: `${baseUrl}/invoices/${params.invoiceId}`,
+              text: { type: "plain_text", text: "Approve" },
               style: "primary",
+              action_id: "arra_approve",
+              value: JSON.stringify({
+                approvalId: params.approvalId,
+                invoiceId: params.invoiceId,
+              }),
+            },
+            {
+              type: "button",
+              text: { type: "plain_text", text: "Deny" },
+              style: "danger",
+              action_id: "arra_deny",
+              value: JSON.stringify({
+                approvalId: params.approvalId,
+                invoiceId: params.invoiceId,
+              }),
+            },
+            {
+              type: "button",
+              text: { type: "plain_text", text: "Open in ARRA" },
+              action_id: "arra_open",
+              url: `${baseUrl}/invoices/${params.invoiceId}`,
             },
           ],
         },
       ],
-    }),
-  });
-}
-
-/**
- * Send an interactive Slack notification with Approve / Deny / Chat buttons.
- * Uses Slack Web API (requires SLACK_BOT_TOKEN).
- */
-export async function notifySlackWithApproval(
-  params: SlackApprovalNotification
-): Promise<void> {
-  const token = process.env.SLACK_BOT_TOKEN;
-  const channel = process.env.SLACK_CHANNEL_ID;
-
-  if (!token || !channel) {
-    console.log(
-      "[Slack] No SLACK_BOT_TOKEN or SLACK_CHANNEL_ID configured — falling back to webhook"
+    });
+  } catch (err) {
+    console.error(
+      "[Slack] Failed to post approval message:",
+      err instanceof Error ? err.message : err
     );
-    await notifySlack(params);
-    return;
   }
-
-  const { WebClient } = await import("@slack/web-api");
-  const slack = new WebClient(token);
-
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-
-  await slack.chat.postMessage({
-    channel,
-    blocks: [
-      {
-        type: "header",
-        text: {
-          type: "plain_text",
-          text: "ARRA — Approval Required",
-          emoji: true,
-        },
-      },
-      {
-        type: "section",
-        fields: [
-          {
-            type: "mrkdwn",
-            text: `*Invoice:*\n${params.invoiceNumber}`,
-          },
-          {
-            type: "mrkdwn",
-            text: `*Customer:*\n${params.customerName}`,
-          },
-          {
-            type: "mrkdwn",
-            text: `*Amount:*\n£${params.amount.toLocaleString()}`,
-          },
-          {
-            type: "mrkdwn",
-            text: `*Reason:*\n${params.reason}`,
-          },
-        ],
-      },
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `*Context:*\n${params.context}`,
-        },
-      },
-      {
-        type: "actions",
-        block_id: `approval_${params.approvalId}`,
-        elements: [
-          {
-            type: "button",
-            text: { type: "plain_text", text: "Approve" },
-            style: "primary",
-            action_id: "arra_approve",
-            value: JSON.stringify({
-              approvalId: params.approvalId,
-              invoiceId: params.invoiceId,
-            }),
-          },
-          {
-            type: "button",
-            text: { type: "plain_text", text: "Deny" },
-            style: "danger",
-            action_id: "arra_deny",
-            value: JSON.stringify({
-              approvalId: params.approvalId,
-              invoiceId: params.invoiceId,
-            }),
-          },
-          {
-            type: "button",
-            text: { type: "plain_text", text: "Open in ARRA" },
-            action_id: "arra_open",
-            url: `${baseUrl}/invoices/${params.invoiceId}`,
-          },
-        ],
-      },
-    ],
-  });
 }
 
 /**
