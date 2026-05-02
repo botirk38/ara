@@ -14,12 +14,12 @@ export default async function HomePage() {
   const allCustomers = await db.select().from(customers);
   const customerMap = new Map(allCustomers.map((c) => [c.id, c]));
 
-  const invoicesWithCustomers: InvoiceWithCustomer[] = allInvoices.map(
-    (inv) => {
-      const customer = customerMap.get(inv.customerId)!;
+  const invoicesWithCustomers: InvoiceWithCustomer[] = allInvoices
+    .filter((inv) => customerMap.has(inv.customerId))
+    .map((inv) => {
+      const customer = customerMap.get(inv.customerId) as InvoiceWithCustomer["customer"];
       return { ...inv, customer };
-    }
-  );
+    });
 
   const stats: DashboardStats = {
     totalOverdue: invoicesWithCustomers
