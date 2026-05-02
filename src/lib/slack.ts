@@ -89,8 +89,7 @@ export async function notifySlack(params: SlackNotification): Promise<void> {
     });
     if (!res.ok) {
       const body = await res.text().catch(() => res.statusText);
-      console.error(`[Slack] Webhook returned ${res.status}: ${body}`);
-      throw new Error(`Slack webhook returned ${res.status}`);
+      throw new Error(`Slack webhook returned ${res.status}: ${body}`);
     }
   } catch (err) {
     console.error(
