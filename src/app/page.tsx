@@ -25,7 +25,7 @@ export default async function HomePage() {
     totalOverdue: invoicesWithCustomers
       .filter((i) => i.status === "overdue" || i.status === "recovering")
       .reduce((sum, i) => sum + i.amount, 0),
-    invoiceCount: allInvoices.length,
+    invoiceCount: invoicesWithCustomers.length,
     recoveredToday: invoicesWithCustomers
       .filter(
         (i) => i.status === "promise_to_pay" || i.status === "paid"
