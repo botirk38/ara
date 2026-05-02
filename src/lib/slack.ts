@@ -88,15 +88,16 @@ export async function notifySlack(params: SlackNotification): Promise<void> {
       }),
     });
     if (!res.ok) {
-      console.error(
-        `[Slack] Webhook returned ${res.status}: ${await res.text().catch(() => res.statusText)}`
-      );
+      const body = await res.text().catch(() => res.statusText);
+      console.error(`[Slack] Webhook returned ${res.status}: ${body}`);
+      throw new Error(`Slack webhook returned ${res.status}`);
     }
   } catch (err) {
     console.error(
       "[Slack] Webhook delivery failed:",
       err instanceof Error ? err.message : err
     );
+    throw err;
   }
 }
 
