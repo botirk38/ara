@@ -3,7 +3,7 @@ import { invoices, customers } from "@/db/schema";
 import { StatsHeader } from "@/components/stats-header";
 import { InvoiceTable } from "@/components/invoice-table";
 import { seed } from "@/db/seed";
-import type { InvoiceWithCustomer, DashboardStats } from "@/lib/types";
+import type { DashboardStats } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +14,12 @@ export default async function HomePage() {
   const allCustomers = await db.select().from(customers);
   const customerMap = new Map(allCustomers.map((c) => [c.id, c]));
 
-  const invoicesWithCustomers: InvoiceWithCustomer[] = allInvoices.map(
-    (inv) => {
+  const invoicesWithCustomers = allInvoices
+    .filter((inv) => customerMap.has(inv.customerId))
+    .map((inv) => {
       const customer = customerMap.get(inv.customerId)!;
       return { ...inv, customer };
-    }
-  );
+    });
 
   const stats: DashboardStats = {
     totalOverdue: invoicesWithCustomers
