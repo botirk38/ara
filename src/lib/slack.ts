@@ -202,6 +202,7 @@ export async function notifySlackWithApproval(
       "[Slack] Failed to post approval message:",
       err instanceof Error ? err.message : err
     );
+    throw err;
   }
 }
 
