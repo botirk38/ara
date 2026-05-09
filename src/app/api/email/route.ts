@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { Resend } from "resend";
 
 const emailRequestSchema = z.object({
   to: z.string().email(),
@@ -44,8 +45,7 @@ export async function POST(req: NextRequest) {
   const { to, subject, body } = parsed.data;
 
   try {
-    const resendModule = await import("resend");
-    const resend = new resendModule.Resend(process.env.RESEND_API_KEY);
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
     const result = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL,

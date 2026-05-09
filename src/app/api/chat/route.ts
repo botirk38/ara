@@ -19,6 +19,8 @@ import {
   checkApprovalDecision,
 } from "@/lib/slack";
 import { logEvent } from "@/lib/timeline";
+import { Resend } from "resend";
+import twilio from "twilio";
 
 export const maxDuration = 120;
 
@@ -210,8 +212,7 @@ export async function POST(req: Request) {
             process.env.TWILIO_AUTH_TOKEN
           ) {
             try {
-              const twilioModule = await import("twilio");
-              const client = twilioModule.default(
+              const client = twilio(
                 process.env.TWILIO_ACCOUNT_SID!,
                 process.env.TWILIO_AUTH_TOKEN!
               );
@@ -309,10 +310,7 @@ export async function POST(req: Request) {
 
           if (process.env.RESEND_API_KEY) {
             try {
-              const resendModule = await import("resend");
-              const resend = new resendModule.Resend(
-                process.env.RESEND_API_KEY
-              );
+              const resend = new Resend(process.env.RESEND_API_KEY);
 
               await resend.emails.send({
                 from:
@@ -413,10 +411,7 @@ export async function POST(req: Request) {
           // Send confirmation email with payment link
           if (process.env.RESEND_API_KEY) {
             try {
-              const resendModule = await import("resend");
-              const resend = new resendModule.Resend(
-                process.env.RESEND_API_KEY
-              );
+              const resend = new Resend(process.env.RESEND_API_KEY);
 
               await resend.emails.send({
                 from:
