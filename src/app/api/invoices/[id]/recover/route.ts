@@ -24,7 +24,12 @@ export async function POST(
   const invoiceRows = await db
     .select()
     .from(invoices)
-    .where(eq(invoices.id, id));
+    .where(eq(invoices.id, id))
+    .catch(() => null);
+
+  if (!invoiceRows) {
+    return Response.json({ error: "Database query failed" }, { status: 500 });
+  }
   const invoice = invoiceRows[0];
   if (!invoice) {
     return Response.json({ error: "Invoice not found" }, { status: 404 });
@@ -33,7 +38,12 @@ export async function POST(
   const customerRows = await db
     .select()
     .from(customers)
-    .where(eq(customers.id, invoice.customerId));
+    .where(eq(customers.id, invoice.customerId))
+    .catch(() => null);
+
+  if (!customerRows) {
+    return Response.json({ error: "Database query failed" }, { status: 500 });
+  }
   const customer = customerRows[0];
   if (!customer) {
     return Response.json({ error: "Customer not found" }, { status: 404 });
